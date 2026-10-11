@@ -1,0 +1,421 @@
+INCEPTION REPORT
+Development of a Containerised Mobile-Money-First Multi-Vendor Marketplace
+for Isoko — East Africa
+SPEDO501 Perform DevOps  ·  Year 3 SPE Capstone  ·  2026–2027
+Document title
+Inception Report — Isoko Marketplace Platform
+Document ID
+ISK-INC-2026-001
+Milestone
+M1 — Inception + SRS baseline (Week 1–2)
+Client
+Isoko — Product Owner / client role
+Programme
+SPEDO501  ·  ICTSPE5002  ·  Rwanda Coding Academy Year 3 SPE
+Delivery team
+Year 3 SPE project group  ·  Trainer / assessor
+Authoritative requirements
+SRS ISK-SRS-2026-001 v1.0 (baseline for review)
+Acceptance instrument
+UAT Test Pack ISK-UAT-2026-001 (planned companion document)
+Version / date
+v1.0 · 29 September 2026
+Status
+BASELINED — pending Product Owner review and sign-off
+
+
+TABLE OF CONTENTS
+1. Executive Summary2
+2. Project Background and Programme Context2
+3. Scope of Work3
+4. Project Organisation and Team4
+5. Development Methodology (Including SRS/UAT Binding)4
+6. Technical Architecture Overview6
+7. Project Work Plan and Schedule6
+8. Effort and Resources8
+9. Communication and Reporting8
+10. Risk Register9
+11. Quality and UAT Approach10
+12. Assumptions and Dependencies10
+13. Immediate Next Steps11
+Annex A — Gantt Overview12
+Annex B — Document Set12
+
+1. Executive summary
+This Inception Report is submitted as Milestone 1 of the SPEDO501 integrated capstone. It marks the formal start of work on Isoko, a mobile-money-first, multi-vendor marketplace for East Africa: a web storefront/PWA, REST API and database services, seller and admin workflows, escrow payments, and delivery confirmation. The platform is delivered through containerisation, CI/CD and Kubernetes, with monitoring and alerting built in.
+The product scope is defined in the Software Requirements Specification ISK-SRS-2026-001 v1.0, including use cases, functional requirements, non-functional requirements, security requirements and acceptance traceability. The companion UAT pack is ISK-UAT-2026-001. This Inception Report binds those requirements to the project plan, milestones, risks, resources, communication approach and working assumptions.
+Reading instruction for testers: the report’s objectives, out-of-scope list and technical approach must remain consistent with the SRS and UAT materials. Release 1 is a PWA-based marketplace; native Android/iOS applications, live payment gateway internals, Isoko-operated warehouses, buy-now-pay-later, cross-border trade and live production customer data remain outside the academic scope.
+2. Project background and programme context
+SPEDO501 Perform DevOps requires trainees to configure an environment, execute tests, monitor logs and prepare documentation against one running scenario. Isoko is the selected scenario: a green-field, mobile-first marketplace where buyers can browse and purchase from multiple sellers, pay through MTN MoMo, Airtel Money or card, and have successful payments held in escrow until delivery is confirmed. The platform is designed as containerised services with Kubernetes, CI/CD, structured observability and security controls.
+Party
+Representative
+Role
+Isoko Product Owner
+Client / Product Owner role
+Business authority; prioritise backlog; accept SRS; lead UAT; sign go-live
+Year 3 SPE team
+Project group
+Design, build, containerise, test, monitor and document
+Trainer / assessor
+Trainer / technical authority
+Baseline documents; moderate UAT; assess against learning outcomes
+Sellers / buyers / delivery partners
+Pilot/UAT participants
+Provide marketplace feedback and validate core workflows
+
+3. Scope of work
+Validated in-scope deliverables. Each row maps the Isoko SRS requirements and acceptance/test areas to a project deliverable.
+Component
+Description
+SRS / UAT
+Milestone
+Web storefront / PWA
+Mobile-first browsing, search, product detail, wishlist, cart, checkout and buyer account flows
+UC-01..09, 14 · FR-AUTH/CAT/CART/DISC/CHK
+M2
+Seller + admin operations
+KYC seller onboarding, listings, fulfilment, payouts, moderation and dispute handling
+UC-10..17 · FR-SEL/ORD/ADM
+M3
+Payment + escrow
+MTN MoMo, Airtel Money and card through adapters; timeout, reconciliation and escrow rules
+UC-08 · FR-PAY-*
+M3
+Orders + delivery
+Order state machine, shipping, delivery OTP, disputes and refunds
+UC-09, UC-15..16 · FR-ORD-*
+M3
+Containers + Kubernetes
+Dockerised services, Helm/Kubernetes deployment, scaling and environment portability
+SRS §11–12 · FR-DEV-*
+M2–M3
+CI/CD + infrastructure
+GitHub Actions, Argo CD/GitOps, infrastructure and deployment automation
+SRS §11–12
+M2
+Observability + security
+Structured logs, metrics, dashboards, alerts, security controls and auditability
+SRS §9–10, §12
+M3–M4
+
+Explicitly out of scope for Release 1, as defined by the Isoko SRS:
+Native Android/iOS applications; the responsive PWA is the mobile experience for Release 1.
+Internals of third-party payment gateways, mobile-money operators and courier systems; only adapter contracts and failure behaviour are in scope.
+Isoko-operated warehouses, buy-now-pay-later, cross-border trade, ERP/accounting integration, and live production customer data during the academic project.
+Live production payment processing or public-domain go-live unless separately approved; the academic environment uses payment sandbox/stub integrations.
+4. Project organisation and team
+Role
+Who
+Accountability
+Product Owner
+Client / Isoko role
+Prioritise backlog; accept SRS; lead UAT; sign go-live
+Trainer / assessor
+Technical authority
+Baseline documents; moderate UAT; assess
+Developers / DevOps engineers
+SPE trainees
+Design, build, containerise, pipeline, test, monitor, document
+QA / test lead
+SPE trainees (project role)
+Requirements traceability, test evidence, UAT facilitation, findings
+Sellers / SMEs
+Pilot participants
+Provide catalogue, fulfil orders, give feedback
+Buyers
+UAT participants
+Validate usability and checkout
+Pickup agents / couriers
+Delivery partners
+Handover parcels and confirm delivery with OTP
+Payment providers
+External systems / sandbox
+Charge, refund and payout through adapters
+
+5. Development methodology
+5.1 Sprint structure (mapped to the Isoko SRS timeline)
+Sprint
+Weeks
+Focus
+Review gate
+M1 / Sprint 1
+Weeks 1–3
+Requirements, architecture, API/design baseline and pipeline skeleton
+SRS signed; architecture/API agreed; pipeline skeleton runs
+M2 / Sprint 2
+Weeks 4–6
+Core browsing, catalogue, cart and checkout flow; container/CI work
+Core shopping flow ready; M1/M2 evidence
+M3 / Sprint 3
+Weeks 7–9
+Payments, escrow, sellers, operations, Kubernetes and monitoring
+Payments/seller operations and platform controls ready
+M4 / Sprint 4
+Weeks 10–19
+Integration, UAT, performance/security evidence, documentation and handover
+UAT passed; documentation complete; demo delivered
+
+The Isoko SRS defines four three-week delivery sprints with a V-model discipline for quality. Each sprint ends with a verification checkpoint, including a green pipeline/quality gate and Product Owner review; the overall delivery plan runs to Week 19 with M1–M4 milestones.
+5.2 Ceremonies and artifacts
+Stand-up: blockers, commits, failing tests and current work.
+Sprint/review session: demonstration of completed requirements and working flows to the Product Owner.
+Milestone review: Product Owner and trainer/assessor review the agreed exit criteria.
+Issue tracker: work items and defects are linked to requirement IDs and acceptance/test evidence.
+Requirements traceability matrix: Must requirements are linked to verification and UAT evidence before acceptance.
+Change requests: changes to scope or requirements are assessed for impact before being incorporated; no silent scope additions.
+5.3 How this report, the SRS and UAT fit together
+V-Model pairing used on this project:
+Left arm (plan/design)
+Right arm (tests)
+Governing document
+Requirements gathering
+Acceptance tests / UAT
+SRS §6–7; ISK-UAT-2026-001
+System architecture
+System / end-to-end tests
+SRS §8–12
+Module/service design
+Integration tests
+SRS §7, §11–14
+Unit design
+Unit tests / coverage gates
+Functional requirements and test plan
+Coding + deployment
+Pipeline build/test/deploy gates
+SRS §11–12
+
+UAT validates whether real Isoko users can complete the intended marketplace tasks, while system and integration tests verify that the implementation satisfies the specified requirements. For example, checkout must not only satisfy the functional requirements but also preserve the money/stock guarantees when payment declines or times out.
+6. Technical architecture overview
+Detail lives in the Isoko SRS Sections 8–12. The inception-level architecture uses a mobile-first PWA storefront, REST services, PostgreSQL, Redis, RabbitMQ, payment and notification adapters, Docker containers and Kubernetes. CI/CD uses GitHub Actions and Argo CD, with structured logging, Prometheus/Loki/Grafana observability and alerting. UAT and load/security testing are performed in the Kubernetes staging environment using synthetic data.
+
+Figure 6.1 — Isoko architecture overview (based on SRS Sections 4, 8 and 11).
+7. Project work plan and schedule
+The Isoko SRS defines a 19-week delivery plan with four three-week development sprints and milestones at Weeks 6, 12, 15 and 19. Deliverables progress from requirements and architecture, through the core shopping flow, payments/seller operations, and finally acceptance and handover.
+Week
+Delivery focus
+Deliverable / gate
+Milestone
+1–2
+Requirements, SRS baseline, architecture/design and pipeline skeleton
+M1 baseline package
+M1
+3–6
+Core storefront, catalogue, cart, checkout; containers and CI/CD
+Core shopping flow in staging
+M2
+7–12
+Payments, escrow, seller workflows, Kubernetes and integrations
+Payments/seller operations ready
+M3
+13–15
+Monitoring, alerts, reliability and security evidence
+Operations/observability evidence
+M3
+16–19
+UAT, fixes, documentation, handover and demo
+UAT passed; handover complete
+M4
+
+The timeline follows the Isoko SRS Section 16. M1 covers requirements and design baseline; M2 covers the core shopping flow; M3 covers payments, sellers and operations; M4 covers acceptance and handover.
+7.1 Milestone acceptance criteria
+Milestone
+Trigger (must all be true)
+Evidence
+M1
+SRS signed; architecture and API agreed; pipeline skeleton runs
+SRS v1.0; architecture/design pack; pipeline evidence
+M2
+Browse → cart → checkout works in staging; containers and CI complete
+Working staging flow; container and CI evidence
+M3
+Escrow, seller portal, Kubernetes, monitoring and alerts are operational
+UAT/system evidence; dashboards; alerts; payment tests
+M4
+UAT passed; documentation complete; demo delivered
+UAT sign-off; README/operations guide; final demo
+
+There is no commercial invoice schedule. M1–M4 are project review and acceptance gates defined by the Isoko SRS; each milestone requires its stated exit evidence before the project proceeds.
+8. Effort and resources
+Budget line
+Allocation
+Notes
+Project effort
+As allocated by SPEDO501 / team plan
+Effort follows the academic capstone schedule
+Team size
+Project group
+Roles may rotate between development, DevOps and QA
+Compute
+Lab PCs + local kind/minikube or approved cloud free tier
+Production spend is outside the academic baseline
+Tools
+GitHub Actions, Argo CD, Docker, Kubernetes/Helm, PostgreSQL, Redis, RabbitMQ, Grafana/Loki/Prometheus
+Technology choices follow SRS §11
+UAT participants
+Product Owner + buyers/sellers/delivery roles as required
+Participants should not accept their own implementation work
+
+9. Communication and reporting
+Channel
+Frequency
+Audience
+Owner
+Stand-up
+Each working session
+Project team
+Team / Scrum rotator
+Sprint review
+End of sprint
+Product Owner + team + trainer
+Team lead
+Defect / issue tracking
+Continuous
+Project team + QA
+QA lead
+Milestone review
+M1–M4
+Product Owner + trainer
+Team lead / trainer
+Escalation
+As soon as a critical blocker threatens a milestone
+Trainer / Product Owner
+Team lead
+
+10. Risk register
+ID
+Risk
+L
+I
+Mitigation
+R01
+Payment timeout or late callback could create money/stock inconsistency
+M
+H
+Treat unknown payment outcome as PaymentTimedOut; reconcile late callbacks; idempotency and append-only ledger
+R02
+External payment, messaging or logistics provider dependency fails
+M
+H
+Use adapter interfaces and sandbox stubs; define failure behaviour and retries
+R03
+Security or personal-data leakage through logs or interfaces
+M
+H
+No PII in logs; secure cookies; TLS; RBAC; secrets management; security verification
+R04
+Low-bandwidth/mobile constraints reduce usability
+M
+M
+Mobile-first PWA; responsive design; offline shell; performance targets and UAT usability checks
+R05
+Container/cluster resource limitations affect the full local stack
+M
+M
+Keep stack runnable on modest hardware; use portable manifests and local kind/minikube fallback
+R06
+Illegal order-state transitions or duplicate requests corrupt order state
+M
+H
+Enforce state machine server-side; use idempotency keys and automated transition tests
+R07
+Scope expands into native apps, live payment processing or other excluded features
+M
+H
+Maintain SRS out-of-scope list and require impact assessment for change requests
+
+11. Quality and UAT approach
+UAT objectives derived from the Isoko SRS acceptance scenarios:
+A buyer can register, verify a phone number, browse products, manage a cart and complete a successful checkout using a supported payment method.
+A seller can complete the required onboarding/listing and fulfilment workflow, subject to the specified KYC and approval rules.
+A payment timeout or other uncertain payment outcome does not incorrectly mark an order as Paid, and money/stock consistency is preserved.
+A seller/courier workflow can move a paid order through shipping and delivery confirmation using the required delivery OTP.
+UAT records task success and the defined usability/acceptance evidence, while performance, reliability and security targets are verified through the appropriate test activities.
+Entry criteria: staging environment available; SRS baseline; UAT/test materials; synthetic seed data; smoke tests green. Exit criteria: required acceptance cases pass or are formally waived; no open Critical defects; Product Owner acceptance is recorded.
+12. Assumptions and dependencies
+#
+Assumption / dependency
+Owner
+Needed by
+A01
+Team has access to Docker, Git and a Kubernetes-capable environment (kind/minikube/cloud)
+Trainer / RCA IT
+Early project
+A02
+Product Owner is available to prioritise backlog, review demos and participate in UAT
+Product Owner / trainer
+Throughout
+A03
+Payment integrations are available through sandbox/stub adapters for the academic environment
+Team
+M2–M3
+A04
+SRS and companion acceptance/test documents remain version-aligned
+QA lead
+Ongoing
+A05
+Synthetic data is used during the academic project; no live production customer data is required
+All
+Ongoing
+A06
+External service adapters expose the contracts and callbacks required by the SRS
+Team / external systems
+Integration phase
+
+13. Immediate next steps
+#
+Action
+Owner
+Deadline
+1
+Review and approve the Inception Report and SRS baseline
+Product Owner + trainer
+M1 / Week 2
+2
+Agree architecture and API/design pack
+Team + Product Owner
+M1
+3
+Prepare UAT/test materials and traceability mapping
+QA lead
+Before execution
+4
+Create/confirm Git repository, issue board and CI pipeline
+Team lead / DevOps
+M1–M2
+5
+Implement and verify the core browse → cart → checkout flow
+Development team
+M2
+6
+Confirm Kubernetes, monitoring and payment sandbox readiness
+DevOps team
+M2–M3
+
+Annex A — Gantt overview
+
+Figure A.1 — 19-week Isoko delivery plan; M1–M4 are the review milestones defined in SRS Section 16.
+The project progresses from requirements/design baseline to the core shopping flow, then payments/seller operations, and finally UAT, documentation and handover. The detailed timeline remains governed by the Isoko SRS.
+Annex B — Document set
+ID
+Document
+When used
+ISK-INC-2026-001
+This Inception Report
+M1; project planning and test-plan preparation
+ISK-SRS-2026-001
+Software Requirements Specification
+Design, verification and V-model left arm
+ISK-UAT-2026-001
+UAT Test Pack
+Validation and acceptance; companion document
+ISK-TP-2026-001
+Test Plan (planned)
+System/integration/performance/security test planning
+RTM
+Requirements traceability matrix
+Links requirements to verification and acceptance evidence
+README / operations guide
+Handover documentation
+M4 final handover and demo
+
+End of Inception Report ISK-INC-2026-001 v1.0.

@@ -1,0 +1,617 @@
+openapi: 3.0.3
+info:
+  title: Isoko Ecommerce API
+  version: 1.0.0
+  description: |
+    REST API for the Isoko marketplace capstone (SPEDO501).
+    Money is integer RWF. The live Springdoc contract at `/v3/api-docs` is authoritative.
+    Guest carts use header `X-Cart-Token`. Authenticated calls use Bearer JWT.
+    Live docs: `/swagger-ui` once the API is running.
+  contact:
+    name: Year 3 SPE / Isoko
+    email: ops@isoko.rw
+  license:
+    name: Academic / capstone
+servers:
+  - url: http://localhost:8080
+    description: Local
+tags:
+  - name: Health
+  - name: Authentication
+  - name: Catalogue
+  - name: Cart
+  - name: Checkout & Orders
+  - name: Wishlist
+  - name: Admin
+security:
+  - bearer-jwt: []
+paths:
+  /api/v1/health:
+    get:
+      tags: [Health]
+      summary: Liveness/readiness for smoke tests (no version leakage)
+      security: []
+      responses:
+        "200":
+          description: Process is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: UP }
+  /api/v1/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Create a customer account and sign in
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenResponse" }
+        "400": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Sign in. Errors are generic (no user enumeration).
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: JWT issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenResponse" }
+        "401": { $ref: "#/components/responses/Problem" }
+  /api/v1/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Invalidate the current access token
+      responses:
+        "200":
+          description: Signed out
+        "401": { $ref: "#/components/responses/Problem" }
+  /api/v1/auth/me:
+    get:
+      tags: [Authentication]
+      summary: Current authenticated user
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserResponse" }
+  /api/v1/products:
+    get:
+      tags: [Catalogue]
+      summary: List/search published products (page size capped at 20)
+      security: []
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 20, maximum: 20 }
+      responses:
+        "200":
+          description: Page of published products
+  /api/v1/products/{id}:
+    get:
+      tags: [Catalogue]
+      summary: Product detail. Unpublished or unknown ids return 404.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "200":
+          description: Published product
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductResponse" }
+        "404": { $ref: "#/components/responses/Problem" }
+  /api/v1/categories:
+    get:
+      tags: [Catalogue]
+      security: []
+      responses:
+        "200":
+          description: Categories
+  /api/v1/cart:
+    get:
+      tags: [Cart]
+      summary: Get or create the current cart
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      responses:
+        "200":
+          description: Cart
+          headers:
+            X-Cart-Token:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CartResponse" }
+  /api/v1/cart/items:
+    post:
+      tags: [Cart]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddItemRequest" }
+      responses:
+        "200":
+          description: Cart after add
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CartResponse" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+  /api/v1/cart/items/{productId}:
+    patch:
+      tags: [Cart]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+        - in: path
+          name: productId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateQtyRequest" }
+      responses:
+        "200":
+          description: Cart after update
+    delete:
+      tags: [Cart]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+        - in: path
+          name: productId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Cart after remove
+  /api/v1/cart/discount:
+    post:
+      tags: [Cart]
+      summary: Apply a 5–10 character alphanumeric discount code
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApplyDiscountRequest" }
+      responses:
+        "200":
+          description: Cart with discount
+        "400": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [Cart]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      responses:
+        "200":
+          description: Discount cleared
+  /api/v1/checkout:
+    post:
+      tags: [Checkout & Orders]
+      summary: Place order and charge via the payment adapter stub
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/PaymentStubMode"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckoutRequest" }
+      responses:
+        "201":
+          description: Order placed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderResponse" }
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+  /api/v1/orders:
+    get:
+      tags: [Checkout & Orders]
+      responses:
+        "200":
+          description: Caller's orders
+  /api/v1/orders/{id}:
+    get:
+      tags: [Checkout & Orders]
+      summary: Get an order you own. Other customers' ids return 404, not 403.
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderResponse" }
+        "404": { $ref: "#/components/responses/Problem" }
+  /api/v1/orders/{id}/pay:
+    post:
+      tags: [Checkout & Orders]
+      summary: Retry payment for PLACED or PAYMENT_TIMED_OUT orders
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+        - $ref: "#/components/parameters/PaymentStubMode"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckoutRequest" }
+      responses:
+        "200":
+          description: Payment retry result
+  /api/v1/wishlist:
+    get:
+      tags: [Wishlist]
+      responses:
+        "200":
+          description: Persisted wishlist
+  /api/v1/wishlist/{productId}:
+    post:
+      tags: [Wishlist]
+      summary: Save an in-stock published product
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Wishlist after add
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [Wishlist]
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Wishlist after remove
+  /api/v1/wishlist/{productId}/move-to-cart:
+    post:
+      tags: [Wishlist]
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Cart after move
+  /api/v1/admin/products:
+    get:
+      tags: [Admin]
+      summary: List all products including drafts
+      responses:
+        "200":
+          description: Catalogue for operators
+    post:
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpsertProductRequest" }
+      responses:
+        "201":
+          description: Product created
+        "403": { $ref: "#/components/responses/Problem" }
+  /api/v1/admin/products/{id}:
+    patch:
+      tags: [Admin]
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpsertProductRequest" }
+      responses:
+        "200":
+          description: Product updated
+  /api/v1/admin/products/{id}/stock:
+    patch:
+      tags: [Admin]
+      summary: Set on-hand stock for a product
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StockUpdateRequest" }
+      responses:
+        "200":
+          description: Stock updated
+  /api/v1/admin/categories:
+    get:
+      tags: [Admin]
+      responses:
+        "200":
+          description: Categories
+    post:
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryRequest" }
+      responses:
+        "201":
+          description: Category created
+  /api/v1/admin/categories/{id}:
+    patch:
+      tags: [Admin]
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryRequest" }
+      responses:
+        "200":
+          description: Category renamed
+  /api/v1/admin/orders:
+    get:
+      tags: [Admin]
+      responses:
+        "200":
+          description: All orders
+  /api/v1/admin/orders/{id}/ship:
+    post:
+      tags: [Admin]
+      summary: Mark a Paid order as Shipped
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShipRequest" }
+      responses:
+        "200":
+          description: Shipped
+        "409": { $ref: "#/components/responses/Problem" }
+  /api/v1/admin/orders/{id}/deliver:
+    post:
+      tags: [Admin]
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "200":
+          description: Delivered
+        "409": { $ref: "#/components/responses/Problem" }
+  /api/v1/admin/orders/{id}:
+    patch:
+      tags: [Admin]
+      summary: Attempt an explicit state change (illegal transitions return 409)
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StatusChangeRequest" }
+      responses:
+        "200":
+          description: Transition applied
+        "409": { $ref: "#/components/responses/Problem" }
+components:
+  securitySchemes:
+    bearer-jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    CartToken:
+      in: header
+      name: X-Cart-Token
+      required: false
+      schema: { type: string }
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: false
+      schema: { type: string }
+    PaymentStubMode:
+      in: header
+      name: X-Payment-Stub-Mode
+      required: false
+      schema: { type: string, enum: [SUCCESS, DECLINE, TIMEOUT] }
+    UuidId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Problem:
+      description: RFC 7807 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+  schemas:
+    ProblemDetail:
+      type: object
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code: { type: string }
+        traceId: { type: string }
+    RegisterRequest:
+      type: object
+      required: [email, password, phone]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 72 }
+        phone: { type: string, example: "0780000000", pattern: "^07[0-9]{8}$" }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    TokenResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        user: { $ref: "#/components/schemas/UserResponse" }
+    UserResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        phone: { type: string }
+        status: { type: string, enum: [ACTIVE, LOCKED, DISABLED] }
+        loyaltyTier: { type: string, enum: [STANDARD, GOLD] }
+        roles:
+          type: array
+          items: { type: string }
+    ProductResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        description: { type: string }
+        priceRwf: { type: integer, format: int64 }
+        stockQty: { type: integer }
+        status: { type: string, enum: [DRAFT, PUBLISHED] }
+        stockBadge: { type: string, enum: [IN_STOCK, OUT_OF_STOCK] }
+        categoryId: { type: string, format: uuid }
+        categoryName: { type: string }
+        imageUrl: { type: string }
+    AddItemRequest:
+      type: object
+      required: [productId, qty]
+      properties:
+        productId: { type: string, format: uuid }
+        qty: { type: integer, minimum: 1 }
+    UpdateQtyRequest:
+      type: object
+      required: [qty]
+      properties:
+        qty: { type: integer, minimum: 0 }
+    ApplyDiscountRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 5, maxLength: 10 }
+    CartResponse:
+      type: object
+      properties:
+        cartId: { type: string, format: uuid }
+        guestToken: { type: string }
+        discountCode: { type: string }
+        subtotalRwf: { type: integer, format: int64 }
+        discountRwf: { type: integer, format: int64 }
+        shippingRwf: { type: integer, format: int64 }
+        totalRwf: { type: integer, format: int64 }
+        pricedAsTier: { type: string, enum: [STANDARD, GOLD] }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId: { type: string, format: uuid }
+              sku: { type: string }
+              name: { type: string }
+              qty: { type: integer }
+              unitPriceRwf: { type: integer, format: int64 }
+              lineTotalRwf: { type: integer, format: int64 }
+              imageUrl: { type: string }
+    CheckoutRequest:
+      type: object
+      required: [paymentMethod]
+      properties:
+        paymentMethod: { type: string, enum: [MTN_MOMO, CARD] }
+        stubMode: { type: string, enum: [SUCCESS, DECLINE, TIMEOUT] }
+    OrderResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string }
+        status: { type: string, enum: [PLACED, PAID, SHIPPED, DELIVERED, CANCELLED, PAYMENT_TIMED_OUT] }
+        subtotalRwf: { type: integer, format: int64 }
+        discountRwf: { type: integer, format: int64 }
+        shippingRwf: { type: integer, format: int64 }
+        totalRwf: { type: integer, format: int64 }
+        placedAt: { type: string, format: date-time }
+    UpsertProductRequest:
+      type: object
+      required: [sku, name, priceRwf, stockQty, status]
+      properties:
+        sku: { type: string }
+        name: { type: string }
+        description: { type: string }
+        priceRwf: { type: integer, format: int64, minimum: 0 }
+        stockQty: { type: integer, minimum: 0 }
+        status: { type: string, enum: [DRAFT, PUBLISHED] }
+        category: { type: string }
+        imageUrl: { type: string }
+    StockUpdateRequest:
+      type: object
+      required: [stockQty]
+      properties:
+        stockQty: { type: integer, minimum: 0 }
+    CategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+    ShipRequest:
+      type: object
+      required: [trackingNo]
+      properties:
+        trackingNo: { type: string }
+    StatusChangeRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [PLACED, PAID, SHIPPED, DELIVERED, CANCELLED, PAYMENT_TIMED_OUT] }

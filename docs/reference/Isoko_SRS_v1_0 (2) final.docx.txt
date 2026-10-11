@@ -1,0 +1,1524 @@
+
+SOFTWARE REQUIREMENTS SPECIFICATION
+Isoko — a mobile-money-first, multi-vendor marketplace for East Africa
+Containerised microservices • Kubernetes • CI/CD • Observability • Escrow payments
+Document title
+Software Requirements Specification — Isoko Marketplace Platform
+Document ID
+ISK-SRS-2026-001
+Version / date
+v1.0 — Baseline for review • 29 September 2026
+Status
+BASELINED — pending Product Owner review and sign-off
+Project
+Isoko — containerised multi-vendor ecommerce platform (DevOps capstone, growth-ready design)
+Client / Product Owner
+[Client / Product Owner name, organisation]
+Prepared by
+[Team name] — [Student names]
+Trainer / assessor
+[Trainer name]
+Programme / module
+[Module code and title] • [School / cohort]
+Companion documents
+ISK-INC-2026-001 Inception Report • ISK-UAT-2026-001 UAT Test Pack • ISK-TP-2026-001 Test Plan (planned)
+
+How to use this document
+This SRS is the single technical reference for design, implementation, testing, deployment and acceptance of Isoko. Every use case (Section 6) traces to shall-style requirements (Section 7), non-functional targets (Sections 9–12) and acceptance tests (Section 17, Appendix C). A tester who has never seen the code should be able to write a complete test plan from it; a Product Owner should be able to sign UAT against named behaviours instead of a demo.
+
+1. Introduction
+1.1 Purpose
+This Software Requirements Specification (SRS) defines the complete functional and non-functional requirements of Isoko, a multi-vendor online marketplace built for East African buyers and small-business sellers. Isoko (Kinyarwanda for “market”) lets sellers list products, lets buyers pay with mobile money or card into escrow, and releases the seller’s money only when delivery is confirmed by a one-time code.
+The platform is delivered as containerised services — web storefront, REST API and database at minimum — deployed through a CI/CD pipeline to Kubernetes, with monitoring and alerting built in. This document is the authoritative guide for design, development, verification, validation (UAT), operations and documentation.
+1.2 Scope
+In scope for Release 1 (MVP / capstone):
+Guest browsing, search, filtering and product detail; wishlist for registered buyers.
+Buyer registration, login, phone verification, session management and account lock-out.
+Cart, discount codes (alphanumeric, 5–10 characters), quantity discount and free-shipping rules.
+Checkout with MTN MoMo, Airtel Money or card; payment-timeout handling; escrow and OTP-confirmed delivery.
+Multi-vendor seller onboarding (KYC), product listing, order fulfilment and payouts with commission.
+Order lifecycle: Placed → Payment Pending → Paid → Shipped → Delivered → Completed, plus Cancelled, Payment Timed Out, Disputed and Refunded.
+Admin console for moderation, refunds, dispute resolution and reporting; reviews and ratings.
+English and Kinyarwanda UI (French and Swahili are Release 2), low-bandwidth PWA.
+Containerisation (Docker), orchestration (Kubernetes/Helm), CI/CD (GitHub Actions + Argo CD), infrastructure as code, structured logging, dashboards, alerts and backup/restore.
+Out of scope for Release 1 (see roadmap, Section 2.7):
+Native Android/iOS apps (the PWA covers mobile in Release 1).
+Internals of third-party payment gateways, mobile-money operators and courier systems — only the adapter contract and failure behaviour are in scope.
+Isoko-operated warehouses (“fulfilment by Isoko”), buy-now-pay-later and cross-border trade.
+ERP/accounting integration, and live production customer data during the academic project.
+1.4 Definitions, acronyms and abbreviations
+Term
+Meaning in this document
+Escrow
+Buyer’s payment is held by Isoko and released to the seller only after confirmed delivery (or dispute resolution).
+GMV
+Gross merchandise value — total value of completed orders.
+MoMo / Airtel Money
+Mobile-money wallets used as primary payment rails in Rwanda.
+PSP
+Payment service provider (mobile-money operator, card acquirer).
+KYC
+Know-your-customer verification of sellers (identity and phone).
+OTP
+One-time password/code (used for phone verification and delivery confirmation).
+Pickup point
+Partner shop or locker where buyers collect orders; solves missing street addresses.
+PWA
+Progressive web app — installable, offline-tolerant web application.
+SLI / SLO
+Service-level indicator / objective — measured signal and its target.
+RPO / RTO
+Recovery point / time objective after a disaster.
+RTM
+Requirements traceability matrix (Section 17).
+EP / BVA
+Equivalence partitioning / boundary value analysis — test-design techniques.
+IaC / GitOps
+Infrastructure defined in code / deployments driven from Git as source of truth.
+HPA / PDB
+Kubernetes Horizontal Pod Autoscaler / Pod Disruption Budget.
+RWF
+Rwandan franc; prices are integers (no fractional francs).
+OWASP ASVS
+Application Security Verification Standard, level 2 used as security baseline.
+1.5 References
+IEEE 830 / ISO/IEC/IEEE 29148 — recommended practice for requirements specification.
+OWASP Top 10 (2021) and OWASP ASVS 4.0 (Level 2).
+Twelve-Factor App methodology; Kubernetes documentation; CNCF GitOps principles.
+Google SRE workbook (SLOs, error budgets) and DORA delivery metrics.
+Law No. 058/2021 of 13/10/2021 on the protection of personal data and privacy (Rwanda) — to be re-verified against current text before go-live.
+Module/assessment brief for the DevOps capstone: [insert reference].
+1.7 Document overview
+Section 2 explains why Isoko exists and how it can grow. Section 3 covers stakeholders and method; Section 4 describes the product. Sections 5–6 give the UML use-case model and full use-case specifications. Section 7 lists functional requirements by module, Sections 8–12 cover interfaces, quality, security, architecture and DevOps. Section 13–14 give the data model, order state machine, sequence and activity views. Sections 15–17 contain risks, plan and traceability; appendices hold business rules, test data and acceptance criteria.
+3. Stakeholders and methodology
+3.1 Stakeholders and responsibilities
+Stakeholder
+Role
+Key responsibilities
+Product Owner (client)
+Business authority
+Prioritise backlog; accept SRS; lead UAT; sign go-live
+Project team
+Developers / DevOps engineers
+Design, build, containerise, pipeline, test, monitor, document
+Trainer / assessor
+Technical authority, QA lead
+Baseline documents; moderate UAT; assess against learning outcomes
+Sellers (SMEs)
+Supply side
+Provide catalogue, fulfil orders, give feedback in pilot
+Buyers
+Demand side
+Validate usability and checkout in UAT
+Pickup agents / couriers
+Delivery partners
+Handover parcels, confirm delivery with OTP
+Payment providers
+External systems
+Charge, refund, payout — accessed through adapters (sandbox)
+Regulators
+Compliance
+Data protection, consumer protection, tax, payments oversight
+3.2 Development methodology
+Agile delivery in four three-week sprints (Section 16) with a V-model discipline for quality: acceptance tests are designed while requirements are written, integration tests with module design, and unit tests with unit design. Each sprint ends with a verification checkpoint (pipeline green, coverage gate met, demo to Product Owner) and a short retrospective. Work is tracked as issues linked to requirement IDs.
+4. Overall system description
+4.1 Product perspective
+Isoko is a green-field system. It integrates with external payment, messaging, logistics and identity providers through adapter interfaces, so any provider can be replaced or added without changing domain logic. Figure 4.1 shows the system boundary; Figure 11.1 shows the internal architecture.
+
+Figure 4.1 — System context: people and external systems around the Isoko platform.
+4.3 User classes
+Class
+Characteristics
+Primary use cases
+Guest
+Unauthenticated visitor; may hold an anonymous cart
+UC-01, UC-02, UC-03, UC-04, UC-05
+Customer (buyer)
+Registered, phone-verified; generalises Guest
+UC-05 to UC-09, UC-12 to UC-14
+Seller
+KYC-verified merchant with one shop
+UC-10, UC-11, UC-15, UC-16
+Courier / pickup agent
+Delivery partner using a PWA
+UC-15, UC-16
+Admin / support
+Isoko staff with role-based permissions
+UC-10 (approve), UC-17
+Payment gateway (external)
+MoMo, Airtel Money, card acquirer — sandbox stub in lab
+UC-08
+Notification service (external)
+SMS, e-mail, WhatsApp gateways
+All notifying use cases
+4.4 Operating environments
+Environment
+Purpose
+Characteristics
+Local (Docker Compose)
+Developer inner loop
+All services + Postgres + Redis + RabbitMQ; seed data; docker compose up healthy in ≤ 3 min
+CI (ephemeral)
+Automated build and test
+Containers created per pipeline run and destroyed afterwards
+Staging (Kubernetes)
+UAT, load and security tests
+Mirrors production topology; synthetic data only; payment sandbox
+Production (Kubernetes)
+Live shoppers, after UAT sign-off
+Multi-node, multi-AZ; managed data services; real PSP credentials in secret store
+4.5 Constraints
+Currency is RWF; amounts are integers. Time zone is Africa/Kigali (CAT); timestamps stored in UTC.
+Payment providers are accessed only through sandbox stubs in the academic environment; no real money and no real PII.
+Hosting may be a local kind/minikube cluster or a cloud free tier; manifests must be portable (no vendor-specific APIs in application code).
+All third-party components must use licences compatible with the project (open source preferred).
+The design must keep Release 1 runnable on modest hardware (≤ 8 GB RAM for the full local stack).
+4.6 Assumptions and dependencies
+ID
+Assumption / dependency
+Impact if false
+A-01
+Mobile-money operators provide sandbox APIs with callback webhooks
+Use the in-house gateway stub; adapter contract unchanged
+A-02
+Buyers own a phone that can receive SMS/USSD prompts
+SMS OTP flows need alternative channel (e-mail)
+A-03
+Pickup-point partners can scan/enter a delivery OTP
+Fall back to buyer-side confirmation in the app
+A-04
+National ID verification is available as a service or manual review
+Sellers approved manually by Admin with document upload
+A-05
+Team has access to a container registry and a Kubernetes cluster
+Use local registry and kind
+5. Use-case model
+The diagram follows standard UML use-case notation: a system boundary, human and external actors, generalisation (Customer specialises Guest) and «include» / «extend» relationships. Checkout includes Log in and Pay order and is extended by Apply discount; Log in is extended by Register and by Display error message.
+
+Figure 5.1 — Use-case diagram for the Isoko marketplace.
+6. Use-case specifications
+Each specification uses the standard template: name, summary, actors, trigger, preconditions, post-conditions/guarantee, main flow, extensions, business rules and traceability. Failure guarantees state money and stock explicitly (for example, “the customer is not charged”), because those are the outcomes acceptance tests must check.
+UC-01 — Register account
+Use case name
+Register account
+Summary / description
+A guest creates an Isoko buyer account, verifies their phone and can then log in.
+Actors
+Guest (primary); SMS provider (supporting).
+Trigger
+“Create account” on the login page, or an anonymous user starts checkout.
+Preconditions
+The e-mail and phone number are not already registered.
+Post-conditions / guarantee
+On success a Customer exists with status=active and a verified phone. On failure no partial account is stored.
+Main flow
+1. System shows the form: name, e-mail, phone (07X…), password, confirm password.
+2. Guest submits valid data.
+3. System checks uniqueness, hashes the password (Argon2id) and creates the account as pending.
+4. System sends a 6-digit OTP by SMS (valid 5 minutes).
+5. Guest enters the OTP; system activates the account, signs the user in and sends a welcome message.
+Extensions
+2a. E-mail or phone already registered — show error, offer Log in.
+2b. Password < 8 characters or lacking a letter and a digit — reject and re-prompt.
+2c. Phone not a valid Rwandan mobile (10 digits, 07X) — reject (EP/BVA).
+5a. OTP wrong — allow 3 attempts, then require a new OTP.
+5b. OTP expired — offer “resend” (max 3 per hour).
+Business rules
+• E-mail and phone are each unique.
+• Password policy: ≥ 8 characters, at least one letter and one digit.
+• No account is activated until the OTP is verified.
+Traceability
+FR-AUTH-09..12 • UAT AU-011..AU-014
+
+UC-02 — Log in
+Use case name
+Log in
+Summary / description
+A guest authenticates and becomes a Customer, Seller, Courier or Admin session. On failure access is denied and no session is created.
+Actors
+Guest (primary); auth-service, user store (supporting).
+Trigger
+Guest clicks “Log in”, or Checkout starts while unauthenticated («include» from UC-07).
+Preconditions
+The login page is reachable. An account may or may not exist.
+Post-conditions / guarantee
+On success the user is signed in and returned to the previous page. On failure access is denied, the failed-attempt counter is updated, and the password is never echoed or logged.
+Main flow
+1. System prompts for e-mail (or phone) and password, or to register.
+2. User submits credentials.
+3. System validates them against the user store (sequence: Figure 14.1).
+4. System issues a session (Secure, HttpOnly cookie), merges any anonymous cart and restores the previous page.
+Extensions
+1a. No account — «extend» Register (UC-01), then continue at step 4.
+3a. Invalid credentials — «extend» Display error message: generic “email or password is incorrect”; increment attempts; back to step 1.
+3b. Third consecutive failure — lock account 30 minutes, send security notification, write audit record.
+3c. Account locked or disabled — same generic error; never confirm the account exists.
+3d. Seller/Admin role — require a second factor (TOTP or SMS OTP) before issuing the session.
+*a. User cancels — no session. *b. Connection lost — no session created.
+Business rules
+• Passwords stored hashed (Argon2id); never logged (only inputLen).
+• Cookies: Secure, HttpOnly, SameSite=Lax; idle timeout 30 minutes.
+• Lock-out after 3 failures for 30 minutes; login p95 ≤ 500 ms at 100 concurrent users (NFR-PERF-03).
+Traceability
+FR-AUTH-01..08, 13, 14 • UAT AU-001..AU-010 • Figure 14.1
+
+UC-03 — Search & browse catalogue
+Use case name
+Search & browse catalogue
+Summary / description
+A user finds products by keyword, category, price range or shop.
+Actors
+Guest or Customer.
+Trigger
+User submits a search or opens a category.
+Preconditions
+Catalogue service is healthy (smoke test: home page loads).
+Post-conditions / guarantee
+A paginated result list or an empty-state message is shown; stock badges reflect current inventory.
+Main flow
+1. User enters a query and/or selects category, price range, sort order.
+2. System returns matching published products, 20 per page, with price (RWF), rating and stock badge.
+3. User opens a product (UC-04).
+Extensions
+2a. Zero hits — “No products match your search” with suggestions.
+2b. Search service down — fall back to database listing; if that fails «extend» Display error message (never a blank page).
+Business rules
+• Only status=published products from approved shops appear.
+• Search does not require login and is case- and accent-insensitive.
+• p95 search response ≤ 400 ms (NFR-PERF-02).
+Traceability
+FR-CAT-01..05 • UAT CAT-001..CAT-006
+
+UC-04 — View product
+Use case name
+View product
+Summary / description
+The user inspects a single product: gallery, description, price in RWF, seller, rating and stock.
+Actors
+Guest or Customer.
+Trigger
+Click on a product card or deep link /p/{id}.
+Preconditions
+Product exists and is published.
+Post-conditions / guarantee
+Product detail is displayed; out-of-stock products cannot be added to cart or wishlist.
+Main flow
+1. System loads the product by id/slug (cached, invalidated on change).
+2. System shows title, images (lazy-loaded WebP), price, stock state, seller, reviews, Add to cart / Save to wishlist.
+Extensions
+1a. Unknown id — 404 page.
+1b. Unpublished or hidden product — 404 to guests (no information leakage).
+Business rules
+• Price is an integer in RWF.
+• stock_qty ≤ 0 means out of stock.
+Traceability
+FR-CAT-06..10 • UAT CAT-007..CAT-010
+
+UC-05 — Manage cart
+Use case name
+Manage cart
+Summary / description
+The user adds, changes and removes items in a cart (anonymous or authenticated).
+Actors
+Guest or Customer.
+Trigger
+“Add to cart” or opening the cart.
+Preconditions
+Product is published and in stock for the requested quantity.
+Post-conditions / guarantee
+On success the cart reflects the change and totals recalculate. On failure the cart is unchanged.
+Main flow
+1. User selects quantity ≥ 1 and adds the item.
+2. System checks stock and shop status.
+3. System adds or increments the line and recalculates subtotal.
+4. User may change quantity or remove lines; cart persists for the session and across login.
+Extensions
+2a. Quantity > stock — reject and show remaining quantity.
+2b. Product became unpublished — reject.
+4a. Anonymous cart merged on login — quantities add, capped by stock, no duplicate lines.
+Business rules
+• Stock is not reserved until checkout begins (reservation TTL 10 minutes).
+• Cart holds items from multiple shops; order is split per shop at checkout.
+Traceability
+FR-CART-01..08 • UAT CART-001..CART-008
+
+UC-06 — Apply discount
+Use case name
+Apply discount
+Summary / description
+The customer applies a promotional code to the cart. Invalid codes never reduce the price.
+Actors
+Customer.
+Trigger
+Customer enters a code and selects Apply.
+Preconditions
+Cart has at least one line; customer is logged in at checkout.
+Post-conditions / guarantee
+On success totals show the discount. On failure totals are unchanged and a field-level error is shown.
+Main flow
+1. Customer enters a code.
+2. System validates length, character set, existence and validity window.
+3. System applies the rule (percentage, fixed amount, or free shipping) and redraws totals.
+Extensions
+2a. Length 1–4 or 11+ — “code must be 5–10 characters”.
+2b. Non-alphanumeric (e.g. SAVE-25!) — “code contains invalid characters”.
+2c. Unknown, expired or used-up code — “code is not valid”.
+2d. Minimum quantity/value not met — explain the rule; totals unchanged.
+Business rules
+• Codes are alphanumeric, length 5–10 (EP + BVA, Appendix A).
+• Automatic quantity discount: 10 % when ≥ 5 items; not stacked with a code — the larger discount wins.
+• At most one code per order; a discount never takes a line below 0 RWF and never exceeds 50 % of subtotal.
+Traceability
+FR-DISC-01..08 • UAT DISC-001..DISC-010 • Appendix A
+
+UC-07 — Checkout / place order
+Use case name
+Checkout / place order
+Summary / description
+The customer converts the cart into an order and receives an order number.
+Actors
+Customer (primary); Payment Gateway, Notification service (supporting).
+Trigger
+Customer selects “Checkout”.
+Preconditions
+Non-empty cart; items still in stock.
+Post-conditions / guarantee
+On success an Order exists in Placed (then Paid if payment succeeds) and the customer receives an order number. On failure no order is left in a charged state, the customer is not charged, and stock reservations are released.
+Main flow
+1. «Include» Log in if the session is anonymous.
+2. System shows order summary per shop; customer confirms address or selects a pickup point.
+3. Optional: «extend» Apply discount (UC-06).
+4. System displays the invoice: subtotal, shipping, discount, total (RWF).
+5. Customer chooses MoMo, Airtel Money or card and confirms.
+6. System creates the order (Placed), reserves stock and «include» Pay order (UC-08).
+7. System shows “transaction successful” with the order number and sends notifications.
+Extensions
+1a. Log in fails — cancel reservation; customer not charged.
+2a. Customer edits address — back to step 2.
+5a. Customer changes payment method — back to step 4.
+6a. Payment declined or timed out — see UC-08; order not Paid.
+6b. Double submit — idempotency key returns the same order; no second charge.
+*a. Customer cancels — confirm dialog, release reservation. *b. Connection lost — reservation expires; no charge. *c. No payment confirmation within 10 minutes — cancel, “return to cart and try again”.
+Business rules
+• Free shipping when subtotal ≥ 50,000 RWF or buyer tier = Gold (Appendix A).
+• Card numbers are never stored; only a gateway token/reference.
+• Place-order is idempotent (Idempotency-Key).
+• Orders are split per shop so each seller fulfils and is paid separately.
+Traceability
+FR-CHK-01..12 • UAT CO-001..CO-014 • Figure 14.3
+
+UC-08 — Pay order (escrow)
+Use case name
+Pay order (escrow)
+Summary / description
+The platform requests a charge from the payment adapter and records success, failure or timeout; successful payments are held in escrow.
+Actors
+Customer; Payment Gateway.
+Trigger
+Included from Checkout step 6, or “Retry payment” on a Placed / PaymentTimedOut order.
+Preconditions
+Order is Placed (or PaymentTimedOut for retry); amount > 0.
+Post-conditions / guarantee
+On success Order=Paid, payment=held, stock committed. On failure or timeout Order is not Paid and the customer is not charged.
+Main flow
+1. System sends charge(amount, method, orderId, idempotencyKey) to the adapter; order=PaymentPending.
+2. Customer approves on their phone (PIN prompt) or completes 3-D Secure.
+3. Gateway calls back with success and reference; system verifies the HMAC signature.
+4. System sets payment=held, order=Paid, writes audit, publishes PaymentCaptured, notifies buyer and seller.
+Extensions
+3a. Gateway declines — order returns to Placed; show reason; allow retry.
+3b. No callback within 45 s — worker polls status; if still unknown, order=PaymentTimedOut; never assume Paid; stock released after 10 minutes.
+3c. Duplicate or replayed callback — ignored if already processed (idempotent).
+3d. Late callback after timeout — reconcile: mark Paid if funds captured, otherwise auto-refund.
+Business rules
+• Unknown outcome is never treated as success.
+• Adapter internals are out of scope; contract is in Section 8.4.
+• All money movements are written to an append-only ledger.
+Traceability
+FR-PAY-01..12 • UAT PAY-001..PAY-014 • Figure 14.2
+
+UC-09 — Track order
+Use case name
+Track order
+Summary / description
+The customer follows an order through Placed → Paid → Shipped → Delivered → Completed.
+Actors
+Customer; Notification service.
+Trigger
+“My orders” or a tracking link in an SMS/e-mail.
+Preconditions
+The order belongs to the logged-in customer.
+Post-conditions / guarantee
+Current state, history and allowed next actions are shown. Other customers’ orders are never visible.
+Main flow
+1. System authorises the order id against the session.
+2. System shows state timeline, items per shop, masked payment reference and shipment tracking.
+Extensions
+1a. Order not owned — 404 (not 403, to avoid leakage).
+1b. Unknown id — 404.
+Business rules
+• Illegal state transitions (e.g. Delivered → Placed) are rejected server-side.
+• Customer can cancel only in Placed, PaymentPending or Paid (before shipping).
+Traceability
+FR-ORD-01..05 • UAT OR-001..OR-007
+
+UC-11 — Manage listings
+Use case name
+Manage listings
+Summary / description
+An approved seller creates, edits, hides and restocks products.
+Actors
+Seller.
+Trigger
+Seller portal → Products.
+Preconditions
+Shop status = Approved.
+Post-conditions / guarantee
+Published catalogue reflects saves within 5 seconds.
+Main flow
+1. Seller creates or edits a product (sku, title, description, category, price RWF, stock, images).
+2. System validates, stores images (resized, WebP), saves as draft or published.
+3. Storefront search reflects the change.
+Extensions
+1a. Duplicate SKU in the shop — reject.
+1b. Price ≤ 0 or non-integer — reject.
+1c. Prohibited category/keywords — hold for moderation.
+Business rules
+• SKU immutable after first publish; negative stock forbidden.
+• Seller can only touch their own shop’s data (row-level ownership check).
+Traceability
+FR-SEL-06..09 • UAT SL-007..SL-012
+
+UC-14 — Manage wishlist
+Use case name
+Manage wishlist
+Summary / description
+A logged-in customer saves products for later; the list persists across sessions.
+Actors
+Customer.
+Trigger
+“Save to wishlist” or opening the wishlist.
+Preconditions
+Customer is authenticated.
+Post-conditions / guarantee
+Wishlist reflects adds and removes; items persist after logout/login.
+Main flow
+1. Customer saves an in-stock published product.
+2. Heart icon updates immediately without page reload.
+3. Customer may move an item to the cart (UC-05).
+Extensions
+1a. Out of stock — cannot add; message shown.
+1b. Unauthenticated — redirect to Log in («extend» from Manage cart in Figure 5.1 for the move-to-cart action).
+Business rules
+• Wishlist is per customer, not per browser.
+Traceability
+FR-WL-01..05 • UAT WL-001..WL-006
+
+UC-15 — Fulfil order
+Use case name
+Fulfil order
+Summary / description
+A seller confirms and ships a paid order; a courier or pickup agent collects it.
+Actors
+Seller; Courier / pickup agent.
+Trigger
+Order appears in “To ship” queue.
+Preconditions
+Order item state = Paid.
+Post-conditions / guarantee
+Shipment created with tracking number; order = Shipped; buyer notified with delivery OTP.
+Main flow
+1. Seller confirms stock and packs the item.
+2. Seller enters tracking number or requests courier pick-up.
+3. System sets Shipped, generates a delivery OTP for the buyer and notifies them.
+Extensions
+1a. Item unavailable — seller cancels; buyer fully refunded; seller penalty recorded.
+2a. Missing tracking number — ship is rejected.
+3a. Attempt to ship an unpaid order — rejected.
+Business rules
+• Seller must ship within 3 days or the order auto-cancels with refund.
+• Only the owning seller and Admin may change fulfilment state.
+Traceability
+FR-SEL-10..12, FR-ORD-06 • UAT SL-013..SL-017
+
+UC-18 — Display error message
+Use case name
+Display error message
+Summary / description
+Extension use case: show a safe, useful error without leaking internals.
+Actors
+Any user.
+Trigger
+Any validation, authentication, payment or system failure.
+Preconditions
+An error condition has been raised.
+Post-conditions / guarantee
+User sees a clear message and a reference code; logs carry the same trace id; stack traces are never shown.
+Main flow
+1. System maps the error to a stable code (Appendix D).
+2. UI shows the localised message and reference.
+3. A structured log record with trace_id is written.
+Extensions
+1a. Unmapped 500 — generic “something went wrong” plus trace id.
+Business rules
+• No stack traces, SQL or account-existence leaks in any response.
+Traceability
+FR-ERR-01..03 • UAT AU-003, NF-005
+
+7. Functional requirements by module
+Requirements are written as testable shall statements. Must items are UAT gates: all must pass for the release to be “Accepted”. Ver. = verification method (T test, D demonstration, I inspection, A analysis).
+7.1 Authentication and session (AUTH)
+ID
+Requirement (the system shall…)
+Pri
+Ver.
+FR-AUTH-01
+Present e-mail/phone + password login at /login.
+Must
+T
+FR-AUTH-02
+Authenticate against the user store within 3 s under normal load.
+Must
+T
+FR-AUTH-03
+Reject invalid credentials with a generic error that does not reveal whether the account exists.
+Must
+T
+FR-AUTH-04
+After 3 consecutive failures lock the account for 30 minutes and send a security notification.
+Must
+T
+FR-AUTH-05
+Deny locked or disabled accounts without confirming that the e-mail exists.
+Must
+T
+FR-AUTH-06
+Expire sessions after 30 minutes idle and on logout; absolute lifetime 12 hours.
+Must
+T
+FR-AUTH-07
+Never write passwords or OTPs to application or access logs (log inputLen only).
+Must
+I
+FR-AUTH-08
+Show “password is required” when the password field is blank (client and server validation).
+Should
+T
+FR-AUTH-09
+Registration requires unique e-mail, unique Rwandan mobile (07X#######), password ≥ 8 with letter + digit.
+Must
+T
+FR-AUTH-10
+Verify phone by 6-digit SMS OTP (5-minute validity, 3 attempts, 3 resends/hour) before activating an account.
+Must
+T
+FR-AUTH-11
+Not persist a partial account when validation fails.
+Must
+T
+FR-AUTH-12
+Logout shall invalidate the server-side session and the cookie.
+Must
+T
+FR-AUTH-13
+Require a second factor (TOTP or SMS OTP) for Seller and Admin roles.
+Must
+T
+FR-AUTH-14
+Support password reset via time-limited (15 min), single-use link or OTP.
+Should
+T
+7.2 Catalogue and search (CAT)
+ID
+Requirement (the system shall…)
+Pri
+Ver.
+FR-CAT-01
+List published products with name, price (RWF), image, rating and stock badge.
+Must
+T
+FR-CAT-02
+Search name/description/SKU case- and accent-insensitively; paginate at 20 items.
+Must
+T
+FR-CAT-03
+Hide unpublished products and products of non-approved shops from Guests and Customers.
+Must
+T
+FR-CAT-04
+Provide filters: category, price range, shop, rating, availability; sort by relevance, price, newest.
+Should
+T
+FR-CAT-05
+If the home page fails to load the smoke test fails and further execution stops (CI gate).
+Must
+T
+FR-CAT-06
+Serve product detail by id or slug; unknown id returns 404.
+Must
+T
+FR-CAT-07
+Return 404 (not 403) for unpublished products to non-owners.
+Must
+T
+FR-CAT-08
+Display prices as integer RWF with thousand separators.
+Must
+T
+FR-CAT-09
+Serve responsive WebP images with lazy loading; product page ≤ 300 KB on first view (excluding gallery).
+Should
+A
+FR-CAT-10
+Storefront changes made by sellers shall appear within 5 seconds (cache invalidation).
+Must
+T
+7.3 Cart and discounts (CART, DISC)
+ID
+Requirement (the system shall…)
+Pri
+Ver.
+FR-CART-01
+Allow Guests and Customers to add published, in-stock products to a cart.
+Must
+T
+FR-CART-02
+Reject quantity > stock and show remaining stock; cart unchanged.
+Must
+T
+FR-CART-03
+Persist the cart for the session and across login; merge anonymous into user cart without duplicate lines, capped by stock.
+Must
+T
+FR-CART-04
+Recalculate subtotal, shipping, discount and total on every change.
+Must
+T
+FR-CART-05
+Group cart lines by shop and show each shop’s subtotal.
+Should
+D
+FR-CART-06
+Reserve stock on checkout start with a 10-minute TTL; release on expiry, cancel or failure.
+Must
+T
+FR-CART-07
+Remove lines whose product became unpublished or out of stock and tell the user.
+Must
+T
+FR-CART-08
+Keep carts of anonymous users for 7 days.
+Could
+T
+FR-DISC-01
+Accept discount codes of 5–10 alphanumeric characters only.
+Must
+T
+FR-DISC-02
+Reject codes shorter than 5 or longer than 10 with “code must be 5–10 characters”.
+Must
+T
+FR-DISC-03
+Reject non-alphanumeric characters with “code contains invalid characters”.
+Must
+T
+FR-DISC-04
+Reject unknown, expired or exhausted codes with “code is not valid”; totals unchanged.
+Must
+T
+FR-DISC-05
+Apply an automatic 10 % quantity discount when the order has ≥ 5 items; 0 % otherwise.
+Must
+T
+FR-DISC-06
+Allow at most one code per order; apply the larger of code and quantity discount (no stacking).
+Must
+T
+FR-DISC-07
+Never reduce any line below 0 RWF; cap total discount at 50 % of subtotal.
+Must
+T
+FR-DISC-08
+Compute shipping using the decision table in Appendix A (free at ≥ 50,000 RWF or Gold tier).
+Must
+T
+7.4 Checkout and payment (CHK, PAY)
+ID
+Requirement (the system shall…)
+Pri
+Ver.
+FR-CHK-01
+Require login at checkout, returning the user to the same step afterwards.
+Must
+T
+FR-CHK-02
+Offer home delivery (address) or pickup point selection per order.
+Must
+D
+FR-CHK-03
+Show an invoice with subtotal, shipping, discount and total before payment.
+Must
+T
+FR-CHK-04
+Create one order with one order item group per shop.
+Must
+T
+FR-CHK-05
+Make place-order idempotent via the Idempotency-Key header; a repeat returns the original order.
+Must
+T
+FR-CHK-06
+On any failure leave no charged order and release reserved stock.
+Must
+T
+FR-CHK-07
+Cancel unpaid orders 10 minutes after creation and show “return to cart and try again”.
+Must
+T
+FR-CHK-08
+Show the order number and confirmation after successful payment and send SMS/e-mail receipts.
+Must
+T
+FR-CHK-09
+Validate that the cart is non-empty and every item is in stock at order creation.
+Must
+T
+FR-CHK-10
+When a mobile-money timeout occurs after the order was already marked Paid, move it to PaymentTimedOut/reconcile and never leave stock and money inconsistent.
+Must
+T
+FR-CHK-11
+Allow the customer to change payment method before confirming.
+Should
+T
+FR-CHK-12
+Record the exact price, discount and fee applied on the order (immutable snapshot).
+Must
+I
+FR-PAY-01
+Send charge requests to the payment adapter with amount, method, order id and idempotency key.
+Must
+T
+FR-PAY-02
+Support MTN MoMo, Airtel Money and card through interchangeable adapters.
+Must
+D
+FR-PAY-03
+Verify the HMAC signature and timestamp of every payment callback.
+Must
+T
+FR-PAY-04
+Treat no callback within 45 s as unknown: poll status, then mark PaymentTimedOut; never assume Paid.
+Must
+T
+FR-PAY-05
+Ignore duplicate/replayed callbacks for an already-processed payment.
+Must
+T
+FR-PAY-06
+Hold successful payments in escrow (state held) until delivery is confirmed.
+Must
+T
+FR-PAY-07
+Never store card numbers or CVV; store only gateway tokens/references.
+Must
+I
+FR-PAY-08
+Write every money movement to an append-only double-entry ledger.
+Must
+I
+FR-PAY-09
+Reconcile PSP settlement reports daily and alert on any mismatch.
+Should
+A
+FR-PAY-10
+Release escrow to the seller net of commission after Completed; payout idempotent.
+Must
+T
+FR-PAY-11
+Refund to the original payment method for cancellations and upheld disputes.
+Must
+T
+FR-PAY-12
+Retry failed payouts with exponential back-off and alert Admin after 3 failures.
+Should
+T
+7.5 Orders and delivery (ORD)
+ID
+Requirement (the system shall…)
+Pri
+Ver.
+FR-ORD-01
+Show a customer only their own orders; other ids return 404.
+Must
+T
+FR-ORD-02
+Enforce the state machine in Section 13.2 server-side; reject illegal transitions.
+Must
+T
+FR-ORD-03
+Display order timeline, items by shop, masked payment reference and tracking.
+Must
+D
+FR-ORD-04
+Allow the customer to cancel in Placed, PaymentPending or Paid (before Shipped).
+Must
+T
+FR-ORD-05
+Send notifications on Paid, Shipped, Delivered, Completed and Refunded.
+Must
+T
+FR-ORD-06
+Generate a single-use delivery OTP when an order item is Shipped.
+Must
+T
+FR-ORD-07
+Confirm delivery by OTP entry (agent) or buyer confirmation; then set Delivered.
+Must
+T
+FR-ORD-08
+Allow a dispute within 48 h of Delivered; freeze the payout.
+Should
+T
+FR-ORD-09
+Allow one open dispute per order item with reason and photo evidence.
+Should
+T
+FR-ORD-10
+Auto-complete orders after the dispute window if no dispute exists.
+Must
+T
+7.7 Admin console (ADM)
+ID
+Requirement (the system shall…)
+Pri
+Ver.
+FR-ADM-01
+Restrict the console to role=admin with MFA; others get 403.
+Must
+T
+FR-ADM-02
+Approve/reject sellers and moderate listings and reviews.
+Must
+D
+FR-ADM-03
+Resolve disputes: refund, release, or partial refund.
+Must
+T
+FR-ADM-04
+Require four-eyes approval for refunds above 100,000 RWF.
+Should
+T
+FR-ADM-05
+Manage categories, commission rates, discount codes and shipping thresholds.
+Must
+D
+FR-ADM-06
+Write an immutable audit record for every admin action (who, what, when, before/after).
+Must
+I
+FR-ADM-07
+Provide dashboards for GMV, orders, conversion, payment success and disputes.
+Should
+D
+FR-ADM-08
+Allow suspension of a shop or user with immediate effect.
+Must
+T
+7.8 Wishlist, reviews, notifications, localisation, errors
+ID
+Requirement (the system shall…)
+Pri
+Ver.
+FR-WL-01
+Allow logged-in customers to save an in-stock published product to a wishlist.
+Should
+T
+FR-WL-02
+Reject out-of-stock products with a clear message.
+Should
+T
+FR-WL-03
+Update the wishlist icon immediately without a full page refresh.
+Should
+T
+FR-WL-04
+Persist wishlist items after logout and login.
+Should
+T
+FR-WL-05
+Allow moving a wishlist item to the cart.
+Should
+T
+FR-REV-01
+Allow reviews only from buyers of a Delivered/Completed item; one per item.
+Should
+T
+FR-REV-02
+Compute average rating and count per product.
+Should
+T
+FR-REV-03
+Hold flagged reviews for moderation.
+Could
+D
+FR-NOT-01
+Send SMS/e-mail for OTP, order status and security events; retry failures 3 times.
+Must
+T
+FR-NOT-02
+Respect user notification preferences except security messages.
+Should
+T
+FR-I18N-01
+Provide English and Kinyarwanda UI text; language switchable at any time.
+Should
+D
+FR-I18N-02
+Format money, dates and phone numbers per locale; all strings externalised.
+Should
+I
+FR-ERR-01
+Map every error to a stable code and localised message (Appendix D).
+Must
+T
+FR-ERR-02
+Include a trace/reference id in every error response and log line.
+Must
+T
+FR-ERR-03
+Never expose stack traces, SQL or account existence to users.
+Must
+T
+8. External interface requirements
+8.1 User interfaces
+Mobile-first responsive design (320 px and up); tap targets ≥ 44 px; works on Chrome, Firefox, Safari and Samsung Internet (last two major versions).
+Installable PWA with offline shell, cached catalogue pages and a queued cart.
+Accessibility: WCAG 2.1 AA (contrast, keyboard navigation, labels, focus order).
+Consistent design system (colours, typography, components) documented in the front-end repository.
+8.3 Software and communication interfaces
+Interface
+Protocol
+Direction
+Notes
+Browser ↔ storefront/API
+HTTPS (TLS 1.2+; TLS 1.3 preferred), JSON
+Both
+HSTS, secure cookies, CORS allow-list
+Services ↔ services
+HTTP/JSON + AMQP events
+Both
+Service identity via mTLS or signed tokens
+API ↔ PostgreSQL
+TCP 5432, TLS
+Out
+Least-privilege DB role per service
+Payment adapters
+HTTPS REST + signed webhooks
+Both
+Sandbox stub in lab; credentials in secret store
+SMS / e-mail / WhatsApp
+HTTPS REST
+Out
+Provider behind Notifier interface
+Courier / logistics
+HTTPS REST
+Both
+Optional in Release 1 (manual tracking numbers)
+KYC provider
+HTTPS REST
+Out
+Manual review fallback
+Observability
+OTLP, Prometheus scrape, Loki push
+Out
+No PII in labels or logs
+9. Non-functional requirements
+Each target is measurable and is verified in the pipeline or in the acceptance/load test cycle. Load figures assume the staging cluster described in Section 12.
+ID
+Area
+Requirement
+Target
+Ver.
+NFR-PERF-01
+Performance
+Storefront page load on 3G (1.6 Mbps, 300 ms RTT), Largest Contentful Paint
+≤ 3.0 s (p75)
+A
+NFR-PERF-02
+Performance
+Search and catalogue API response
+p95 ≤ 400 ms at 200 rps
+A
+NFR-PERF-03
+Performance
+Login API response under 100 concurrent users
+p95 ≤ 500 ms
+A
+NFR-PERF-04
+Performance
+Place-order + payment initiation
+p95 ≤ 1.5 s (excl. PSP)
+A
+NFR-CAP-01
+Capacity
+Sustained load / peak (e.g. sale event)
+500 rps sustained; 2× burst for 10 min
+A
+NFR-AVL-01
+Availability
+Monthly availability of storefront + API
+≥ 99.5 % (R1); 99.9 % (R3)
+A
+NFR-REL-01
+Reliability
+Zero-downtime deployments; failed release auto-rolls back
+0 failed user requests attributable
+T
+NFR-REL-02
+Reliability
+No money/stock inconsistency after any single-component failure
+0 discrepancies in chaos test
+T
+NFR-DR-01
+Recovery
+RPO / RTO for the database
+RPO ≤ 5 min; RTO ≤ 60 min
+T
+NFR-SCL-01
+Scalability
+Stateless services scale horizontally via HPA (CPU 65 %)
+2–10 pods without config change
+T
+NFR-USE-01
+Usability
+New buyer completes first purchase without help
+≥ 90 % in UAT sample
+T
+NFR-USE-02
+Usability
+Checkout steps from cart to confirmation
+≤ 4 screens
+D
+NFR-ACC-01
+Accessibility
+WCAG 2.1 AA automated (axe) on key pages
+0 critical violations
+T
+NFR-I18N-01
+Localisation
+No hard-coded user-facing strings
+100 % externalised
+I
+NFR-MNT-01
+Maintainability
+Unit-test coverage / static-analysis quality gate
+≥ 80 % / no blocker issues
+T
+NFR-MNT-02
+Maintainability
+Mean time to add a new payment adapter
+≤ 2 days (interface unchanged)
+D
+NFR-PRT-01
+Portability
+Runs unchanged on kind, minikube and a managed cluster
+Same Helm chart, values only
+D
+NFR-OBS-01
+Observability
+Every request traceable across services by one id
+100 % of requests
+T
+NFR-DEP-01
+Delivery
+Lead time from merge to production; deployment frequency
+≤ 1 day; ≥ 1/day (DORA)
+A
+NFR-COST-01
+Cost
+Release 1 staging environment monthly cost
+≤ US$ 150 (documented)
+A
+10. Security and privacy requirements
+10.2 Security requirements
+ID
+Requirement
+Pri
+Ver.
+SEC-01
+Encrypt all traffic with TLS 1.2+ (1.3 preferred); HSTS enabled; certificates auto-renewed.
+Must
+T
+SEC-02
+Hash passwords with Argon2id (or bcrypt cost ≥ 12) with per-user salt; never reversible.
+Must
+I
+SEC-03
+Session cookies Secure, HttpOnly, SameSite=Lax; rotate session id on login; CSRF tokens on state-changing requests.
+Must
+T
+SEC-04
+Apply role-based access control; check ownership on every object (prevents IDOR).
+Must
+T
+SEC-05
+Rate-limit login, OTP and payment endpoints per IP and per account; return 429 with Retry-After.
+Must
+T
+SEC-06
+Validate and encode all input/output to prevent injection and XSS; use parameterised queries only.
+Must
+T
+SEC-07
+Set security headers (CSP, X-Content-Type-Options, Referrer-Policy, frame-ancestors).
+Must
+T
+SEC-08
+Keep secrets out of Git and images; use a secret manager / sealed secrets; rotate at least every 90 days.
+Must
+I
+SEC-09
+Encrypt personal data and identity documents at rest (AES-256); database and backups encrypted.
+Must
+I
+SEC-10
+Never store PAN/CVV; card data handled by the acquirer’s hosted fields (keeps PCI DSS scope minimal).
+Must
+I
+SEC-11
+Sign and verify payment webhooks (HMAC-SHA256 + timestamp, 5-minute tolerance).
+Must
+T
+SEC-12
+Scan code (SAST), dependencies (SCA) and container images on every build; block HIGH/CRITICAL findings.
+Must
+T
+SEC-13
+Run containers as non-root with read-only file systems and dropped capabilities; NetworkPolicy default-deny.
+Must
+I
+SEC-14
+Record security-relevant events (login, lock-out, role change, refund, payout) in a tamper-evident audit log kept ≥ 12 months.
+Must
+I
+SEC-15
+Run OWASP ZAP baseline against staging on every release; fix or waive with sign-off.
+Should
+T
+SEC-16
+Provide a data-subject process: export and deletion/anonymisation of personal data on request.
+Should
+D
+11. Architecture and technology stack
+11.3 Technology stack
+Technology choices are recommendations that satisfy the requirements; equivalents are acceptable if they pass the same quality gates.
+Layer
+Choice
+Reason
+Front end
+Next.js (React) PWA, TypeScript, Tailwind
+SSR for speed on slow phones and SEO; typed components
+Back end
+Node.js (NestJS) or Python (FastAPI), REST + OpenAPI
+Fast delivery, strong tooling, easy contract tests
+Database
+PostgreSQL 16 (primary + replica)
+ACID transactions for orders and ledger; JSONB for flexibility
+Cache / locks
+Redis 7
+Sessions, rate limits, stock-reservation locks, hot catalogue
+Search
+PostgreSQL full-text (R1) → OpenSearch (R2)
+Start simple; adapter allows swap
+Messaging
+RabbitMQ
+Reliable events, dead-letter queues, simple ops
+Object storage
+S3-compatible (MinIO locally)
+Product images, KYC documents
+Containers
+Docker (multi-stage, distroless/alpine, non-root)
+Small, reproducible, secure images
+Orchestration
+Kubernetes + Helm (kind/minikube locally)
+Autoscaling, self-healing, rolling updates
+CI / CD
+GitHub Actions + Argo CD (GitOps)
+Pipeline as code; Git as source of truth
+IaC
+Terraform (cloud), Helm charts, Kustomize overlays
+Repeatable environments
+Observability
+Prometheus, Grafana, Loki, OpenTelemetry, Alertmanager
+Metrics, logs, traces, alerts in one stack
+Security tooling
+CodeQL, gitleaks, Trivy, cosign, OWASP ZAP, kube-linter
+Shift-left checks across the pipeline
+Testing
+Jest/PyTest, Supertest, Playwright, k6
+Unit, API, E2E and load coverage
+13. Domain model and state machines
+13.1 Domain (class / entity) model
+Figures 13.1 and 13.2 show the core entities and multiplicities. Money is stored as integer RWF; every table has created_at, updated_at and soft-delete where legally required. Foreign keys are enforced and indexed.
+
+Figure 13.1 — Domain model, part 1: users, shops, catalogue, cart, reviews, wishlist.
+
+Figure 13.2 — Domain model, part 2: orders, items, payments, shipments, discounts, audit.
+13.2 Order state machine
+
+Figure 13.3 — Order life cycle with escrow, timeout, dispute and refund paths.
+From
+Event / guard
+To
+Side effects
+—
+Place order (idempotent, stock reserved)
+Placed
+Reservation TTL 10 min; audit
+Placed
+Charge sent to PSP
+PaymentPending
+Payment row pending
+PaymentPending
+Gateway success + valid signature
+Paid
+Payment held; stock committed; notify
+PaymentPending
+Declined
+Placed
+Reason shown; retry allowed
+PaymentPending
+No callback ≥ 45 s
+PaymentTimedOut
+Poll; never assume Paid
+PaymentTimedOut
+Late success callback
+Paid
+Reconcile; else auto-refund
+PaymentTimedOut / Placed
+Expiry 10 min or buyer cancels
+Cancelled
+Stock released
+Paid
+Seller ships with tracking
+Shipped
+Delivery OTP issued
+Paid
+Cancel before shipping
+Cancelled → Refunded
+Full refund
+Shipped
+OTP confirmed / buyer accepts
+Delivered
+Dispute timer 48 h starts
+Delivered
+48 h elapsed, no dispute
+Completed
+Payout net of commission
+Delivered
+Buyer opens dispute
+Disputed
+Payout frozen; Admin task
+Disputed
+Admin: refund / release
+Refunded / Completed
+Ledger entries; notify both
+Any transition not in this table is illegal and must be rejected with error ORD-409 (state-transition tests).
+14. Sequence and activity views
+14.1 Login sequence
+
+Figure 14.1 — Login with generic errors and 3-strike lock-out.
+14.2 Checkout and payment sequence (escrow)
+
+Figure 14.2 — Place order, pay by mobile money, success and timeout paths.
+14.3 Checkout activity flow
+
+Figure 14.3 — Checkout activity diagram with decision points.
+16. Deliverables, timeline and roles
+16.1 Deliverables
+Deliverable
+Description
+Due
+D1 SRS (this document)
+Baseline requirements, models and traceability
+M1 (week 2)
+D2 Architecture & design pack
+C4 views, API spec (OpenAPI), data model, ADRs
+M1
+D3 Working software
+Storefront, API, database, seller portal, admin console
+M2–M3
+D4 Container & pipeline
+Dockerfiles, compose, Helm charts, CI/CD workflows
+M2
+D5 Monitoring pack
+Dashboards, alert rules, runbooks
+M3
+D6 Test evidence
+Test plan, results, coverage, load and security reports, RTM
+M3
+D7 UAT report
+Executed acceptance cases and sign-off
+M3–M4
+D8 Handover & demo
+README, operations guide, recorded demo
+M4
+16.2 Timeline
+
+Figure 16.1 — 19-week delivery plan; M1–M4 are review milestones.
+Milestone
+Week
+Exit criteria
+M1 Requirements & design baseline
+6
+SRS signed; architecture and API agreed; pipeline skeleton runs
+M2 Core shopping flow
+12
+Browse → cart → checkout in staging; containers + CI complete
+M3 Payments, sellers & operations
+15
+Escrow, seller portal, Kubernetes, monitoring, alerts live
+M4 Acceptance & handover
+19
+UAT passed; documentation complete; demo delivered
+17. Requirement–test traceability and acceptance
+17.1 Traceability matrix (Must requirements)
+Use case
+Requirements
+Non-functional / security
+Test IDs (UAT / system)
+UC-01 Register
+FR-AUTH-09..11
+SEC-02, SEC-05
+AU-011..AU-014
+UC-02 Log in
+FR-AUTH-01..07, 12, 13
+NFR-PERF-03, SEC-03
+AU-001..AU-010
+UC-03/04 Search, view
+FR-CAT-01..10
+NFR-PERF-01/02, NFR-ACC-01
+CAT-001..CAT-010
+UC-05 Cart
+FR-CART-01..08
+NFR-PERF-02
+CART-001..CART-008
+UC-06 Discount
+FR-DISC-01..08
+—
+DISC-001..DISC-010
+UC-07 Checkout
+FR-CHK-01..12
+NFR-PERF-04, NFR-REL-02
+CO-001..CO-014
+UC-08 Pay (escrow)
+FR-PAY-01..12
+SEC-10, SEC-11, NFR-REL-02
+PAY-001..PAY-014
+UC-09 Track
+FR-ORD-01..05
+SEC-04
+OR-001..OR-007
+UC-10/11 Seller
+FR-SEL-01..09
+SEC-09, SEC-04
+SL-001..SL-012
+UC-12/16/17 Disputes & payout
+FR-ORD-07..10, FR-ADM-03..06
+SEC-14
+OR-008..OR-013, AD-001..AD-008
+UC-15 Fulfil
+FR-SEL-10..11, FR-ORD-06
+—
+SL-013..SL-017
+Platform / DevOps
+DEV-01..14
+NFR-AVL-01, NFR-DR-01, NFR-OBS-01
+PIPE-001..PIPE-012, OPS-001..OPS-008
+Appendix A — Discount code and shipping rules
+A.1 Discount code validation (EP / BVA)
+Case
+Input example
+Expected result
+Length 4 (below boundary)
+AB12
+Rejected: code must be 5–10 characters
+Length 5 (lower boundary)
+AB123
+Accepted if active
+Length 6 (just above)
+ABC123
+Accepted if active
+Length 9 (just below)
+ABCDE1234
+Accepted if active
+Length 10 (upper boundary)
+ABCDE12345
+Accepted if active
+Length 11 (above boundary)
+ABCDE123456
+Rejected: code must be 5–10 characters
+Empty
+—
+Rejected: enter a code
+Special characters
+SAVE-25!
+Rejected: code contains invalid characters
+Lower/upper case
+save25
+Accepted; matching is case-insensitive
+Unknown / expired
+EXPIRED1
+Rejected: code is not valid
+Quantity below threshold
+4 items + valid quantity code
+Rule not met; explain; totals unchanged
+A.2 Quantity discount
+Items in order
+Discount
+1–4
+0 %
+5 or more
+10 % (boundary tests at 4, 5, 6)
+A.3 Shipping decision table
+Rule
+Subtotal ≥ 50,000 RWF
+Buyer tier = Gold
+Pickup point
+Shipping fee
+R1
+Yes
+—
+—
+0 (free)
+R2
+—
+Yes
+—
+0 (free)
+R3
+No
+No
+Yes
+1,000 RWF
+R4
+No
+No
+No (home delivery)
+2,500 RWF (Kigali) / 4,000 RWF (other)
+Fees are configurable by Admin (FR-ADM-05); values shown are defaults for tests.
+Appendix C — Acceptance scenarios and test data
+C.2 Synthetic test data
+Entity
+Sample values
+Buyers
+amina@example.test / 0781234567 (Gold), eric.buyer@example.test / 0721234567 (Standard)
+Sellers
+Eric Fashion (approved), Kigali Books (pending KYC), Blocked Shop (suspended)
+Products
+SKU TS-001 T-shirt 8,000 RWF stock 20; SKU BK-010 Book 12,500 RWF stock 0 (out of stock); SKU PH-500 Phone case 5,000 RWF stock 100
+Discount codes
+SAVE10 (valid), SUMMER2026 (valid), EXPIRED1 (expired), AB12 (too short)
+Gateway stub modes
+success, decline, timeout, late-success, duplicate-callback

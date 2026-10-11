@@ -1,0 +1,212 @@
+
+SHEET Cover
+B3=ISOKO MARKETPLACE
+B4=Multi-vendor Marketplace Platform  —  SIT / UAT Test Pack
+B5=Authentication  •  Catalogue  •  Cart & Discount  •  Checkout  •  Wishlist & Orders  •  Seller & Admin  •  Non-functional
+B7=Buyer storefront  /  uat.isoko.rw (UAT)
+B10=PROJECT INFORMATION  /  AMAKURU Y'UMUSHINGA
+B11=Project | C11=Isoko Multi-vendor Marketplace (mobile-money-first, escrow)
+B12=Application / Module | C12=Web storefront + REST API + database (containerised, Kubernetes)
+B13=In-scope journeys | C13=Login/Register, Catalogue, Cart, Discount, Checkout (MoMo/Airtel/Card, escrow), Wishlist, Orders, Seller onboarding & fulfilment, OTP delivery & payout
+B14=Out of scope | C14=Native apps; buyer disputes & reviews (Release 2); payment-gateway internals; live MoMo charges; real customer data
+B15=Governing SRS | C15=ISK-SRS-2026-001 v1.0  —  use cases UC-01..15
+B16=Governing Inception | C16=ISK-INC-2026-001 v1.0  —  milestones M1–M4, 19-week plan
+B17=Test Phase | C17=SIT  →  UAT
+B18=Environment | C18=UAT / staging Kubernetes cluster (seed data: SRS Appendix B)
+B19=Build / Release | C19=1.0-rc
+B20=Test Lead | C20=QA lead (rotating)  ·  Trainer: [Trainer name]
+B21=Business Owner / PO | C21=Isoko Product Owner
+B22=UAT window | C22=Session 1: Week 12  ·  Session 2: Week 16  ·  Sign-off: Milestone 4 (Week 19)
+B23=Document ID / Version | C23=ISK-UAT-2026-001  ·  v1.0  ·  30 September 2026
+B26=HOW TO USE  /  UBURYO BWO GUKORESHA
+B27=1. Confirm entry criteria | C27=SRS baselined, Inception accepted, smoke test (home + /healthz) green, Appendix B seed loaded. Do not start if smoke fails.
+B28=2. Pick a test sheet | C28=Authentication, Catalogue, Cart & Discount, Checkout, Wishlist & Orders, Seller & Admin, or Non-functional.
+B29=3. Run each test case | C29=Follow Test Steps on the UAT storefront (or API notes where marked). Record Actual Result.
+B30=4. Record the outcome | C30=Status dropdown: Pass / Fail / Blocked / Not Executed. Failures get a Defect ID.
+B31=5. Watch the Dashboard | C31=Counts and pass rate update live from the Status columns.
+B32=6. Capture LO4 metrics | C32=On the Protocol sheet: task success, time on task, satisfaction 1–5.
+B33=7. Sign-off | C33=Product Owner and QA Lead complete the Dashboard sign-off (Accept / Accept with reservations / Reject).
+B36=STATUS LEGEND  /  IBISOBANURO
+B37=Pass | C37=Test executed and all expected results were observed.
+B38=Fail | C38=Test executed but one or more expected results did not match.
+B39=Blocked | C39=Cannot be executed because of an environment/data/dependency issue.
+B40=Not Executed | C40=Default — test case has not yet been run.
+B42=© Isoko / [Team name] — [Module code] capstone. Internal QA workbook. Do not distribute customer data.
+
+SHEET UAT Protocol
+B2=UAT Protocol  /  LO4 §2 — objectives, metrics, sign-off
+B3=This sheet is the formal UAT report skeleton required by the capstone module (LO4). Test evidence lives on the module sheets; the verdict lives here and on Dashboard.
+B5=2.1  Objectives
+B6=O1  A first-time buyer can register, browse products and complete a successful MoMo checkout unaided.
+B7=O2  Discount code SUMMER2026 and the qty≥5 / free-shipping decision table behave as SRS Appendix A.
+B8=O3  A mobile-money timeout never leaves an order Paid (FR-PAY-04 / FR-CHK-10).
+B9=O4  A seller can publish a product and ship a Paid order from the quick-start guide alone; payout is released only after OTP delivery.
+B10=O5  IDOR: buyer A cannot open buyer B’s order.
+B12=2.2  Metrics (complete during sessions)
+B13=Task (maps to objective) | C13=Participant | D13=Success Y/N | E13=Time on task (min) | F13=Satisfaction 1–5 | G13=Notes
+B14=O1 Browse → register → MoMo success checkout
+B15=O2 Apply SUMMER2026 on 5× PC-500; Gold free shipping
+B16=O3 Force MoMo timeout; confirm not Paid
+B17=O4 Seller publish SKU + ship Paid order (quick-start only)
+B18=O5 Buyer A opens Buyer B order URL
+B20=Task success rate | C20==IF(COUNTA(D14:D18)=0,"",COUNTIF(D14:D18,"Y")/COUNTA(D14:D18))
+B21=Average satisfaction | C21==IF(COUNT(F14:F18)=0,"",AVERAGE(F14:F18))
+B22=Defects found in UAT (count of Fail on Dashboard) | C22==Dashboard!D13
+B24=2.3  Participants (representative users, not only developers)
+B25=Name | C25=Role | D25=Session 1 / 2 | E25=Trained on quick-start?
+C26=Buyer (Buyer A, Standard) | D26=1
+C27=Buyer (Gold / Buyer B) | D27=1
+C28=Isoko Seller / Ops | D28=1+2
+C29=Product Owner | D29=2 (sign-off)
+C30=QA Lead | D30=1+2 | E30=n/a
+B33=2.5–2.6  Verdict
+B34=Overall verdict
+B35=Reservations / conditions for go-live
+
+SHEET Dashboard
+B2=UAT Dashboard  /  Ipimo ry'ibyageragejwe
+B3=Live counts of Pass / Fail / Blocked / Not Executed across all test sheets. Do not type in the count cells.
+B5=Module | C5=Pass | D5=Fail | E5=Blocked | F5=Not Executed | G5=Total | H5=Pass rate
+B6=Authentication | C6==Authentication!D4 | D6==Authentication!F4 | E6==Authentication!H4 | F6==Authentication!J4 | G6==Authentication!B4 | H6==IF(G6=0,0,C6/G6)
+B7=Catalogue | C7==Catalogue!D4 | D7==Catalogue!F4 | E7==Catalogue!H4 | F7==Catalogue!J4 | G7==Catalogue!B4 | H7==IF(G7=0,0,C7/G7)
+B8=Cart & Discount | C8=='Cart & Discount'!D4 | D8=='Cart & Discount'!F4 | E8=='Cart & Discount'!H4 | F8=='Cart & Discount'!J4 | G8=='Cart & Discount'!B4 | H8==IF(G8=0,0,C8/G8)
+B9=Checkout | C9==Checkout!D4 | D9==Checkout!F4 | E9==Checkout!H4 | F9==Checkout!J4 | G9==Checkout!B4 | H9==IF(G9=0,0,C9/G9)
+B10=Wishlist & Orders | C10=='Wishlist & Orders'!D4 | D10=='Wishlist & Orders'!F4 | E10=='Wishlist & Orders'!H4 | F10=='Wishlist & Orders'!J4 | G10=='Wishlist & Orders'!B4 | H10==IF(G10=0,0,C10/G10)
+B11=Seller & Admin | C11=='Seller & Admin'!D4 | D11=='Seller & Admin'!F4 | E11=='Seller & Admin'!H4 | F11=='Seller & Admin'!J4 | G11=='Seller & Admin'!B4 | H11==IF(G11=0,0,C11/G11)
+B12=Non-functional | C12=='Non-functional'!D4 | D12=='Non-functional'!F4 | E12=='Non-functional'!H4 | F12=='Non-functional'!J4 | G12=='Non-functional'!B4 | H12==IF(G12=0,0,C12/G12)
+B13=OVERALL | C13==SUM(C6:C12) | D13==SUM(D6:D12) | E13==SUM(E6:E12) | F13==SUM(F6:F12) | G13==SUM(G6:G12) | H13==IF(G13=0,0,C13/G13)
+B32=UAT SIGN-OFF  /  KWEMEZA
+B33=Role | C33=Name | D33=Decision | E33=Signature | F33=Date
+B34=Product Owner, Isoko
+B35=QA Lead
+B36=Trainer / Technical authority
+B38=Sign-off authorises (or refuses) release to the integrated summative demo / production-like cluster. It is not a developer “done”.
+
+SHEET Authentication
+A2=Authentication  /  Kwinjira
+A3=Login, lock-out, registration with phone OTP, session and logging. Maps to UC-01/02 and FR-AUTH-*.
+A4=Total | B4==COUNTA(B6:B17) | C4=Pass | D4==COUNTIF(K6:K17,"Pass") | E4=Fail | F4==COUNTIF(K6:K17,"Fail") | G4=Blocked | H4==COUNTIF(K6:K17,"Blocked") | I4=Not Executed | J4==COUNTIF(K6:K17,"Not Executed") | K4=Pass rate | L4==IF(B4=0,0,D4/B4)
+A5=# | B5=Test ID | C5=Module | D5=Sub-module | E5=Test Case Title | F5=Pre-conditions | G5=Test Steps | H5=Expected Result | I5=Actual Result | J5=Priority | K5=Status | L5=Tester | M5=Test Date | N5=Defect ID | O5=Comments
+A6=1 | B6=AU-001 | C6=Authentication | D6=Welcome | E6=Login page loads (smoke) | F6=UAT cluster healthy. | G6=Open /login. | H6=Email and password fields and Sign in button are visible; labelled for assistive tech. | J6=Critical | K6=Not Executed | O6=UC-02 / FR-AUTH-01
+A7=2 | B7=AU-002 | C7=Authentication | D7=Happy path | E7=Registered buyer logs in | F7=amina@isoko.test exists (Appendix B). | G7=1. Open /login.
+2. Enter amina@isoko.test + correct password.
+3. Submit. | H7=Redirect to previous page or home; session cookie set; user menu shows the email. | J7=Critical | K7=Not Executed | O7=UC-02 main flow
+A8=3 | B8=AU-003 | C8=Authentication | D8=Invalid password | E8=Wrong password — generic error | F8=amina@isoko.test exists. | G8=Submit correct email + wrong password. | H8=Generic error; no stack trace; does not say “password incorrect” vs “email unknown”. | J8=Critical | K8=Not Executed | O8=UC-02 3a / FR-AUTH-03
+A9=4 | B9=AU-004 | C9=Authentication | D9=Unknown email | E9=Unknown email — same generic error | F9=Email not in store. | G9=Submit nobody@isoko.test + any password. | H9=Same generic error as AU-003 (no user enumeration). | J9=High | K9=Not Executed | O9=FR-AUTH-03
+A10=5 | B10=AU-005 | C10=Authentication | D10=Lock-out | E10=Account locks after 3 wrong passwords | F10=Fresh failed-attempt counter. | G10=Submit a wrong password three times in a row for amina@. | H10=Third attempt locks 30 min; security notification requested; further logins denied. | J10=Critical | K10=Not Executed | O10=FR-AUTH-04
+A11=6 | B11=AU-006 | C11=Authentication | D11=Locked user | E11=Already-locked account cannot log in | F11=locked@isoko.test is locked. | G11=Submit the correct password for the locked user. | H11=Denied; message does not confirm the email exists. | J11=High | K11=Not Executed | O11=FR-AUTH-05
+A12=7 | B12=AU-007 | C12=Authentication | D12=Blank password | E12=Blank password client validation | F12=Login form. | G12=Fill email, leave password empty, click Sign in. | H12=“password is required” shown; no request sent. | J12=Medium | K12=Not Executed | O12=FR-AUTH-01 form validation
+A13=8 | B13=AU-008 | C13=Authentication | D13=Register | E13=Register — happy path with phone OTP | F13=New unique email; SMS stub returns OTP. | G13=Complete register with valid 07X phone and 8+ char password (letter + digit); enter the SMS OTP. | H13=Account activated only after OTP; user signed in; welcome message requested. | J13=High | K13=Not Executed | O13=UC-01 / FR-AUTH-08, 09
+A14=9 | B14=AU-009 | C14=Authentication | D14=Register | E14=Register — duplicate email | F14=amina@isoko.test already exists. | G14=Register with amina@isoko.test. | H14=Rejected; offer Log in; no second account. | J14=High | K14=Not Executed | O14=UC-01 2a / FR-AUTH-10
+A15=10 | B15=AU-010 | C15=Authentication | D15=Logging | E15=Password never appears in logs | F15=Access to API logs. | G15=Run AU-002; inspect logs for the password string. | H15=Logs show inputLen only; password absent. | J15=High | K15=Not Executed | O15=FR-AUTH-07
+A16=11 | B16=AU-011 | C16=Authentication | D16=Logout | E16=Logout invalidates session | F16=Logged in. | G16=Logout; press Back; open /account. | H16=Redirected to login; old cookie unusable. | J16=High | K16=Not Executed | O16=FR-AUTH-11
+A17=12 | B17=AU-012 | C17=Authentication | D17=Phone BVA | E17=Register rejects 9-digit phone | F17=Registration form. | G17=Enter 078123456 (9 digits) as phone. | H17=Rejected (Rwandan 07X 10-digit rule). | J17=Medium | K17=Not Executed | O17=UC-01 2c / FR-AUTH-08
+
+SHEET Catalogue
+A2=Catalogue  /  Urutonde rw'ibicuruzwa
+A3=Smoke, search, published vs hidden, stock badges and product API. Maps to UC-03/04 and FR-CAT-*.
+A4=Total | B4==COUNTA(B6:B15) | C4=Pass | D4==COUNTIF(K6:K15,"Pass") | E4=Fail | F4==COUNTIF(K6:K15,"Fail") | G4=Blocked | H4==COUNTIF(K6:K15,"Blocked") | I4=Not Executed | J4==COUNTIF(K6:K15,"Not Executed") | K4=Pass rate | L4==IF(B4=0,0,D4/B4)
+A5=# | B5=Test ID | C5=Module | D5=Sub-module | E5=Test Case Title | F5=Pre-conditions | G5=Test Steps | H5=Expected Result | I5=Actual Result | J5=Priority | K5=Status | L5=Tester | M5=Test Date | N5=Defect ID | O5=Comments
+A6=1 | B6=CAT-001 | C6=Catalogue | D6=Smoke | E6=Home page loads | F6=UAT up. | G6=GET / | H6=Home renders with at least the published catalogue region. If this fails, stop the cycle. | J6=Critical | K6=Not Executed | O6=FR-CAT-04 smoke gate
+A7=2 | B7=CAT-002 | C7=Catalogue | D7=List | E7=Published products listed with RWF prices | F7=TS-001 seeded. | G7=Open the catalogue. | H7=TS-001 visible; price 8,000 RWF (integer). | J7=High | K7=Not Executed | O7=FR-CAT-01
+A8=3 | B8=CAT-003 | C8=Catalogue | D8=Search | E8=Search by name — hit | F8=TS-001 published. | G8=Search “T-shirt”. | H8=TS-001 in results. | J8=High | K8=Not Executed | O8=FR-CAT-02
+A9=4 | B9=CAT-004 | C9=Catalogue | D9=Search | E9=Search — zero hits empty state | F9=None. | G9=Search “zzzz-no-sku”. | H9=“No products match your search.” — not a blank page. | J9=Medium | K9=Not Executed | O9=UC-03 2a
+A10=5 | B10=CAT-005 | C10=Catalogue | D10=Unpublished | E10=Unpublished SKU hidden from guest | F10=HIDDEN-01 unpublished. | G10=Search HIDDEN-01 and open /p/HIDDEN-01. | H10=Not in search; detail is 404. | J10=High | K10=Not Executed | O10=FR-CAT-03, 06
+A11=6 | B11=CAT-006 | C11=Catalogue | D11=Detail | E11=Product detail in-stock | F11=TS-001 stockQty=20. | G11=Open the product. | H11=Add to cart enabled; stock badge shows in stock. | J11=High | K11=Not Executed | O11=UC-04
+A12=7 | B12=CAT-007 | C12=Catalogue | D12=Detail | E12=Out-of-stock disables add | F12=BK-010 stockQty=0. | G12=Open BK-010. | H12=Add to cart and wishlist disabled. | J12=High | K12=Not Executed | O12=FR-CAT-07
+A13=8 | B13=CAT-008 | C13=Catalogue | D13=API | E13=Unknown product id returns 404 | F13=API reachable. | G13=GET /v1/products/does-not-exist | H13=HTTP 404 JSON with code and traceId; no stack trace. | J13=High | K13=Not Executed | O13=FR-CAT-05
+A14=9 | B14=CAT-009 | C14=Catalogue | D14=Health | E14=/healthz ready for smoke | F14=Cluster up. | G14=GET /healthz and /readyz | H14=200; does not dump library versions. | J14=High | K14=Not Executed | O14=DEV-09
+A15=10 | B15=CAT-010 | C15=Catalogue | D15=Pagination | E15=Catalogue paginates at 20 | F15=More than 20 published products (seed extra if needed). | G15=Open page 1 then page 2. | H15=20 items on page 1; remainder on page 2. | J15=Medium | K15=Not Executed | O15=FR-CAT-02
+
+SHEET Cart & Discount
+A2=Cart & Discount  /  Agatebo n'igabanuka
+A3=Cart merge, EP/BVA on discount codes, 10% qty rule, shipping decision table. Maps to UC-05/06 and FR-CART-* / FR-DISC-* / FR-SHIP-01.
+A4=Total | B4==COUNTA(B6:B19) | C4=Pass | D4==COUNTIF(K6:K19,"Pass") | E4=Fail | F4==COUNTIF(K6:K19,"Fail") | G4=Blocked | H4==COUNTIF(K6:K19,"Blocked") | I4=Not Executed | J4==COUNTIF(K6:K19,"Not Executed") | K4=Pass rate | L4==IF(B4=0,0,D4/B4)
+A5=# | B5=Test ID | C5=Module | D5=Sub-module | E5=Test Case Title | F5=Pre-conditions | G5=Test Steps | H5=Expected Result | I5=Actual Result | J5=Priority | K5=Status | L5=Tester | M5=Test Date | N5=Defect ID | O5=Comments
+A6=1 | B6=CART-001 | C6=Cart | D6=Add | E6=Add in-stock item to cart | F6=TS-001 in stock. | G6=Add qty 1 from the product page. | H6=Cart shows 1 × TS-001; confirmation shown. | J6=Critical | K6=Not Executed | O6=UC-05 / FR-CART-01
+A7=2 | B7=CART-002 | C7=Cart | D7=Qty | E7=Qty greater than stock rejected | F7=TS-001 stockQty=20. | G7=Add qty 21. | H7=Rejected; remaining 20 shown; cart unchanged. | J7=High | K7=Not Executed | O7=FR-CART-02
+A8=3 | B8=CART-003 | C8=Cart | D8=Merge | E8=Anonymous cart merges on login | F8=Guest cart has PC-500. | G8=Log in as amina@isoko.test. | H8=Cart retained; no duplicate SKU lines. | J8=High | K8=Not Executed | O8=FR-CART-03
+A9=4 | B9=CART-004 | C9=Cart | D9=Totals | E9=Line totals = qty × unit price | F9=2 × PC-500 (5,000) in cart. | G9=Open the cart. | H9=Subtotal 10,000 RWF before shipping/discount. | J9=High | K9=Not Executed | O9=FR-CART-04
+A10=5 | B10=CART-005 | C10=Discount | D10=EP P1 | E10=Code length 4 rejected | F10=Cart non-empty. | G10=Apply AB12. | H10=“code must be 5–10 characters”; totals unchanged. | J10=High | K10=Not Executed | O10=FR-DISC-02 / Appendix A.1
+A11=6 | B11=CART-006 | C11=Discount | D11=EP P2 | E11=Valid 10-character code accepted | F11=Active code SUMMER2026. | G11=Apply SUMMER2026. | H11=Applied per remaining rules; not a length error. | J11=High | K11=Not Executed | O11=FR-DISC-01 / upper boundary
+A12=7 | B12=CART-007 | C12=Discount | D12=EP P3 | E12=Code length 18 rejected | F12=Cart non-empty. | G12=Apply SUMMER2026BIGSALE1. | H12=Length error; totals unchanged. | J12=High | K12=Not Executed | O12=FR-DISC-02
+A13=8 | B13=CART-008 | C13=Discount | D13=EP P4 | E13=Non-alphanumeric code rejected | F13=Cart non-empty. | G13=Apply SAVE-25!. | H13=“code contains invalid characters”. | J13=High | K13=Not Executed | O13=FR-DISC-03
+A14=9 | B14=CART-009 | C14=Discount | D14=BVA | E14=Length 5 accepted / 11 rejected | F14=Active 5-char code SAVE5 seeded. | G14=Try SAVE5, then SAVE5678901 (11 chars). | H14=5 accepted structurally; 11 rejected. | J14=High | K14=Not Executed | O14=FR-DISC-01, 02
+A15=10 | B15=CART-010 | C15=Discount | D15=Unknown | E15=Unknown code does not reduce price | F15=Cart 10,000. | G15=Apply FAKE99. | H15=“code is not valid”; total unchanged. | J15=High | K15=Not Executed | O15=FR-DISC-04
+A16=11 | B16=CART-011 | C16=Discount | D16=Qty rule | E16=5 items get 10% off | F16=PC-500 stock ≥ 5. | G16=Set qty 5; no code applied. | H16=Item subtotal 5 × 5,000 × 0.9 = 22,500. | J16=High | K16=Not Executed | O16=FR-DISC-05
+A17=12 | B17=CART-012 | C17=Discount | D17=Qty rule | E17=4 items get 0% off | F17=PC-500 stock ≥ 4. | G17=Set qty 4. | H17=Subtotal 20,000; no 10% discount. | J17=High | K17=Not Executed | O17=FR-DISC-05 boundary
+A18=13 | B18=CART-013 | C18=Shipping | D18=Decision table | E18=Standard buyer under 50k pays 2,500 home delivery (Kigali) | F18=eric.buyer@isoko.test Standard; subtotal 10,000. | G18=Open the checkout invoice (home delivery, Kigali). | H18=Shipping 2,500 RWF. | J18=High | K18=Not Executed | O18=FR-SHIP-01 / Appendix A.3 R4
+A19=14 | B19=CART-014 | C19=Shipping | D19=Decision table | E19=Gold buyer under 50k gets free shipping | F19=gold@isoko.test; subtotal 10,000. | G19=Open the checkout invoice as Gold. | H19=Shipping 0 RWF. | J19=High | K19=Not Executed | O19=Appendix A.3 R2
+
+SHEET Checkout
+A2=Checkout  /  Kwishyura
+A3=Place order, MoMo/Airtel/Card, escrow, timeout-after-Paid, idempotency, per-shop split. Maps to UC-07/08 and FR-CHK-* / FR-PAY-*.
+A4=Total | B4==COUNTA(B6:B19) | C4=Pass | D4==COUNTIF(K6:K19,"Pass") | E4=Fail | F4==COUNTIF(K6:K19,"Fail") | G4=Blocked | H4==COUNTIF(K6:K19,"Blocked") | I4=Not Executed | J4==COUNTIF(K6:K19,"Not Executed") | K4=Pass rate | L4==IF(B4=0,0,D4/B4)
+A5=# | B5=Test ID | C5=Module | D5=Sub-module | E5=Test Case Title | F5=Pre-conditions | G5=Test Steps | H5=Expected Result | I5=Actual Result | J5=Priority | K5=Status | L5=Tester | M5=Test Date | N5=Defect ID | O5=Comments
+A6=1 | B6=CO-001 | C6=Checkout | D6=Gate | E6=Checkout requires login | F6=Guest cart non-empty. | G6=Click Checkout. | H6=Include::LOGIN; after success return to checkout. | J6=Critical | K6=Not Executed | O6=UC-07 / FR-CHK-01
+A7=2 | B7=CO-002 | C7=Checkout | D7=Empty | E7=Empty cart cannot place order | F7=Logged in, empty cart. | G7=POST place order or click Pay. | H7=Rejected; no order row. | J7=High | K7=Not Executed | O7=FR-CHK-09
+A8=3 | B8=CO-003 | C8=Checkout | D8=Happy MoMo | E8=MoMo success → Paid, escrow held | F8=amina@ cart valid; stub set to success. | G8=Checkout → MTN MoMo → approve. | H8=“transaction successful” with order number; Order=Paid; payment=held (escrow); notification requested; stock committed. | J8=Critical | K8=Not Executed | O8=UC-08 main / FR-PAY-06
+A9=4 | B9=CO-004 | C9=Checkout | D9=Happy Card | E9=Card success → Paid | F9=Stub set to success. | G9=Checkout → Card → confirm. | H9=Paid; card number not stored (inspect DB/payload). | J9=High | K9=Not Executed | O9=FR-PAY-07
+A10=5 | B10=CO-005 | C10=Payment | D10=Decline | E10=Declined payment — buyer not charged | F10=Stub set to decline. | G10=Confirm pay. | H10=Error displayed; order stays Placed; no Paid order; money = 0. | J10=Critical | K10=Not Executed | O10=FR-CHK-06
+A11=6 | B11=CO-006 | C11=Checkout | D11=Cancel | E11=Buyer cancels before pay | F11=On the invoice step. | G11=Click Cancel and confirm “are you sure?”. | H11=Back to cart; no order; no charge. | J11=High | K11=Not Executed | O11=UC-07 *a
+A12=7 | B12=CO-007 | C12=Checkout | D12=Idempotency | E12=Double submit does not double charge | F12=Stub set to success. | G12=Double-click Place order / replay the Idempotency-Key. | H12=One order, one charge. | J12=High | K12=Not Executed | O12=FR-CHK-05
+A13=8 | B13=CO-008 | C13=Payment | D13=Timeout | E13=45 s no callback → PaymentTimedOut, not Paid | F13=Stub set to timeout. | G13=Start MoMo pay; wait past 45 s. | H13=State PaymentTimedOut; buyer not charged; message to retry. | J13=Critical | K13=Not Executed | O13=FR-PAY-04
+A14=9 | B14=CO-009 | C14=Payment | D14=Timeout after Paid | E14=Late timeout after provisional Paid is corrected | F14=Stub: success then timeout signal. | G14=Complete pay; inject timeout/cancel from the stub. | H14=Order leaves Paid → PaymentTimedOut/reconciled; ops alert; stock and money consistent. | J14=Critical | K14=Not Executed | O14=FR-CHK-10
+A15=10 | B15=CO-010 | C15=Payment | D15=Webhook | E15=Duplicate or forged callback is ignored | F15=Order already Paid. | G15=1. Replay the success webhook.
+2. Send one with a wrong HMAC. | H15=Still one Paid order, no second capture; forged callback rejected, state unchanged. | J15=High | K15=Not Executed | O15=FR-PAY-03, 05
+A16=11 | B16=CO-011 | C16=Checkout | D16=10 minute abandon | E16=Unpaid order is cancelled after 10 minutes | F16=Order Placed, not paid. | G16=Wait 10+ minutes (or trigger the job). | H16=Order Cancelled; reserved stock available again. | J16=Medium | K16=Not Executed | O16=FR-CHK-07, CART-05
+A17=12 | B17=CO-012 | C17=Checkout | D17=OOS race | E17=Last item bought by two buyers | F17=LIM-001 stockQty=1; two sessions. | G17=Both attempt checkout. | H17=Only one Paid; the other sees a stock error; no oversell. | J17=High | K17=Not Executed | O17=FR-CHK-09
+A18=13 | B18=CO-013 | C18=Checkout | D18=Invoice | E18=Invoice shows subtotal, shipping, discount, total | F18=Cart with SUMMER2026 and a shipping rule. | G18=Reach the invoice step. | H18=Four figures visible in RWF; match FR-CART-04 rules. | J18=High | K18=Not Executed | O18=FR-CHK-03
+A19=14 | B19=CO-014 | C19=Checkout | D19=Multi-vendor | E19=Cart with two shops is split per shop | F19=Cart has TS-001 (Eric Fashion) and BK-020 (Kigali Books, in stock). | G19=Check out and pay. | H19=One order with two shop groups; each seller sees only their items. | J19=High | K19=Not Executed | O19=FR-CHK-04
+
+SHEET Wishlist & Orders
+A2=Wishlist & Orders  /  Ibyifuzo n'ibitumwa
+A3=FR-WL-01..05 including persistence, IDOR, cancel-refund, legal and illegal order transitions. Maps to UC-09/10 and FR-ORD-*.
+A4=Total | B4==COUNTA(B6:B19) | C4=Pass | D4==COUNTIF(K6:K19,"Pass") | E4=Fail | F4==COUNTIF(K6:K19,"Fail") | G4=Blocked | H4==COUNTIF(K6:K19,"Blocked") | I4=Not Executed | J4==COUNTIF(K6:K19,"Not Executed") | K4=Pass rate | L4==IF(B4=0,0,D4/B4)
+A5=# | B5=Test ID | C5=Module | D5=Sub-module | E5=Test Case Title | F5=Pre-conditions | G5=Test Steps | H5=Expected Result | I5=Actual Result | J5=Priority | K5=Status | L5=Tester | M5=Test Date | N5=Defect ID | O5=Comments
+A6=1 | B6=WO-001 | C6=Wishlist | D6=Add | E6=Add in-stock item (FR-WL-01) | F6=Logged in as amina@; TS-001 in stock. | G6=Click Save to wishlist. | H6=Item on the wishlist page. | J6=High | K6=Not Executed | O6=UC-09
+A7=2 | B7=WO-002 | C7=Wishlist | D7=OOS | E7=Cannot add out-of-stock (FR-WL-02) | F7=BK-010 out of stock. | G7=Save to wishlist. | H7=Rejected with message. | J7=High | K7=Not Executed | O7=FR-WL-02
+A8=3 | B8=WO-003 | C8=Wishlist | D8=Auth | E8=Guest wishlist redirects to login | F8=Logged out. | G8=Open /wishlist. | H8=Redirect to login; after login return to the wishlist. | J8=High | K8=Not Executed | O8=UC-09 1b
+A9=4 | B9=WO-004 | C9=Wishlist | D9=Icon | E9=Icon updates without full refresh (FR-WL-03) | F9=Logged in on a product page. | G9=Add to wishlist; watch the icon. | H9=Icon/count updates immediately. | J9=High | K9=Not Executed | O9=FR-WL-03
+A10=5 | B10=WO-005 | C10=Wishlist | D10=Cart | E10=Move wishlist item to cart (FR-WL-05) | F10=Item on the wishlist. | G10=Move to cart. | H10=Cart has the SKU. | J10=Medium | K10=Not Executed | O10=FR-WL-05
+A11=6 | B11=WO-006 | C11=Wishlist | D11=Persist | E11=Wishlist persists across sessions (FR-WL-04) | F11=Item saved. | G11=Logout, login, open the wishlist. | H11=Item still present. This case MUST stay on the RTM. | J11=Critical | K11=Not Executed | O11=FR-WL-04
+A12=7 | B12=WO-007 | C12=Wishlist | D12=Unpublished | E12=Unpublished product cannot stay actionable | F12=Seller unpublishes a wishlisted SKU. | G12=Open the wishlist. | H12=Item marked unavailable; move-to-cart disabled. | J12=Medium | K12=Not Executed | O12=FR-CAT-03
+A13=8 | B13=WO-008 | C13=Orders | D13=Track | E13=Buyer sees own Paid order | F13=CO-003 succeeded. | G13=Open My orders. | H13=Order number, Paid, lines by shop visible. | J13=High | K13=Not Executed | O13=UC-10 / FR-ORD-03
+A14=9 | B14=WO-009 | C14=Orders | D14=IDOR | E14=Buyer A cannot read Buyer B's order | F14=Two buyers with orders. | G14=As A, GET /v1/orders/{B.id} and open B's URL. | H14=404 (not 403 with body leak). | J14=Critical | K14=Not Executed | O14=FR-ORD-01 / SEC-04
+A15=10 | B15=WO-010 | C15=Orders | D15=State | E15=Legal path Placed→Paid→Shipped→Delivered | F15=A Paid order; seller and agent accounts. | G15=Seller ships with tracking; agent enters the delivery OTP. | H15=Each transition succeeds; notifications requested; payout follows Delivered. | J15=High | K15=Not Executed | O15=FR-ORD-02, 06, 07
+A16=11 | B16=WO-011 | C16=Orders | D16=Illegal | E16=Reject Delivered → Placed | F16=Delivered order. | G16=PATCH state=Placed. | H16=HTTP 409 (ORD-409); state unchanged. | J16=High | K16=Not Executed | O16=FR-ORD-02
+A17=12 | B17=WO-012 | C17=Orders | D17=Cancel | E17=Cancel a Paid order before shipping → refunded | F17=Paid order, not yet Shipped. | G17=Buyer cancels the order. | H17=Order Refunded; full refund to the original method; stock released. | J17=High | K17=Not Executed | O17=FR-ORD-04 / FR-PAY-10
+A18=13 | B18=WO-013 | C18=Orders | D18=Illegal | E18=Reject shipping an unpaid Placed order | F18=Placed, unpaid order. | G18=Seller marks Shipped. | H18=Rejected; stays Placed. | J18=High | K18=Not Executed | O18=UC-13 3a
+A19=14 | B19=WO-014 | C19=Orders | D19=Unknown | E19=Unknown order id is 404 | F19=Logged in. | G19=Open /orders/no-such-id. | H19=404. | J19=Medium | K19=Not Executed | O19=FR-ORD-01
+
+SHEET Seller & Admin
+A2=Seller & Admin  /  Abacuruzi n'ubuyobozi
+A3=Authorisation, seller onboarding, listings, shipping with OTP, payout release, quick-start validation task (LO4). Maps to UC-11..14 and FR-SEL-* / FR-ADM-*.
+A4=Total | B4==COUNTA(B6:B13) | C4=Pass | D4==COUNTIF(K6:K13,"Pass") | E4=Fail | F4==COUNTIF(K6:K13,"Fail") | G4=Blocked | H4==COUNTIF(K6:K13,"Blocked") | I4=Not Executed | J4==COUNTIF(K6:K13,"Not Executed") | K4=Pass rate | L4==IF(B4=0,0,D4/B4)
+A5=# | B5=Test ID | C5=Module | D5=Sub-module | E5=Test Case Title | F5=Pre-conditions | G5=Test Steps | H5=Expected Result | I5=Actual Result | J5=Priority | K5=Status | L5=Tester | M5=Test Date | N5=Defect ID | O5=Comments
+A6=1 | B6=SA-001 | C6=Admin | D6=Authz | E6=Buyer cannot open admin console or seller API | F6=amina@ is a buyer. | G6=GET /admin and POST /v1/seller/products. | H6=403 / redirect; no product created. | J6=Critical | K6=Not Executed | O6=FR-ADM-01 / SEC-04
+A7=2 | B7=SA-002 | C7=Seller | D7=Onboarding | E7=Admin approves a seller before publishing | F7=newseller@isoko.test applied with an ID document. | G7=1. Seller tries to publish (blocked).
+2. Admin approves.
+3. Seller publishes. | H7=Publish blocked until approval; approval notification sent; publish then succeeds. | J7=Critical | K7=Not Executed | O7=UC-11 / FR-SEL-01..04
+A8=3 | B8=SA-003 | C8=Seller | D8=Publish | E8=Seller publishes a unique SKU | F8=seller@isoko.test approved. | G8=Create BAG-300, published, price 15,000, stock 5. | H8=Appears on the storefront within 5 s. | J8=High | K8=Not Executed | O8=UC-12 / FR-CAT-08
+A9=4 | B9=SA-004 | C9=Seller | D9=Duplicate | E9=Duplicate SKU rejected | F9=TS-001 exists in the shop. | G9=Create another TS-001. | H9=Validation error; original unchanged. | J9=High | K9=Not Executed | O9=FR-SEL-06
+A10=5 | B10=SA-005 | C10=Seller | D10=Stock / price | E10=Negative stock or zero price rejected | F10=Seller on BAG-300. | G10=Set stockQty=-1, then price=0. | H10=Both rejected. | J10=High | K10=Not Executed | O10=FR-SEL-07
+A11=6 | B11=SA-006 | C11=Seller | D11=Ship | E11=Seller ships a Paid order with tracking | F11=A Paid order for the seller. | G11=Enter tracking number; click Mark shipped. | H11=State=Shipped; buyer gets a single-use delivery OTP. | J11=High | K11=Not Executed | O11=UC-13 / FR-SEL-09, FR-ORD-06
+A12=7 | B12=SA-007 | C12=Seller | D12=Payout | E12=OTP delivery releases payout net of commission | F12=Shipped order for 1 × TS-001 (8,000 RWF). | G12=Agent enters the buyer's OTP. | H12=State=Delivered; seller payout 7,200 RWF (8,000 − 8 % commission − 2 % fee); recorded in ledger. | J12=Critical | K12=Not Executed | O12=UC-14 / FR-PAY-09
+A13=8 | B13=SA-008 | C13=Seller | D13=Quick-start | E13=Seller completes publish + ship using only the quick-start | F13=O4 participant is not the feature's developer. | G13=Hand over only the quick-start guide; time the task. | H13=Task success without developer help; time recorded on the Protocol sheet. | J13=High | K13=Not Executed | O13=LO4 UAT objective — validation, not verification
+
+SHEET Non-functional
+A2=Non-functional  /  Imikorere n'umutekano
+A3=Performance, pipeline, containers, security scans, observability and accessibility. Maps to NFR-* / SEC-* / DEV-*.
+A4=Total | B4==COUNTA(B6:B15) | C4=Pass | D4==COUNTIF(K6:K15,"Pass") | E4=Fail | F4==COUNTIF(K6:K15,"Fail") | G4=Blocked | H4==COUNTIF(K6:K15,"Blocked") | I4=Not Executed | J4==COUNTIF(K6:K15,"Not Executed") | K4=Pass rate | L4==IF(B4=0,0,D4/B4)
+A5=# | B5=Test ID | C5=Module | D5=Sub-module | E5=Test Case Title | F5=Pre-conditions | G5=Test Steps | H5=Expected Result | I5=Actual Result | J5=Priority | K5=Status | L5=Tester | M5=Test Date | N5=Defect ID | O5=Comments
+A6=1 | B6=NF-001 | C6=Non-functional | D6=Perf | E6=Login p95 ≤ 500 ms at 100 concurrent | F6=JMeter/k6 script; UAT cluster. | G6=Ramp 100 users logging in. | H6=p95 ≤ 500 ms; error rate < 1 %. | J6=High | K6=Not Executed | O6=NFR-PERF-03
+A7=2 | B7=NF-002 | C7=Non-functional | D7=Load | E7=50 concurrent checkouts for 60 s, error rate < 1 % | F7=k6 script. | G7=50 users for 60 s against the checkout API. | H7=Error rate < 1 %; report attached. | J7=High | K7=Not Executed | O7=NFR-PERF-04
+A8=3 | B8=NF-003 | C8=Non-functional | D8=Stress | E8=200 concurrent fails gracefully | F8=Stress script. | G8=200 concurrent checkouts. | H8=No paid-without-stock; no HTML 500 stack traces; pods scale (HPA). | J8=Medium | K8=Not Executed | O8=NFR-REL-02 / NFR-SCL-01
+A9=4 | B9=NF-004 | C9=Non-functional | D9=Pipeline | E9=CI test stage blocks a failing unit test | F9=Repo with Jest tests. | G9=Push a failing unit test on a branch. | H9=Pipeline red; deploy did not run; merge blocked. | J9=High | K9=Not Executed | O9=DEV-03, 04
+A10=5 | B10=NF-005 | C10=Non-functional | D10=Security | E10=Dependency and image scan gate | F10=Pipeline configured. | G10=Open the pipeline log; add a HIGH-severity test dependency. | H10=Audit and Trivy steps present; HIGH finding fails the build. | J10=High | K10=Not Executed | O10=SEC-11
+A11=6 | B11=NF-006 | C11=Non-functional | D11=Containers | E11=docker compose up is healthy in ≤ 3 minutes | F11=Clean machine with Docker. | G11=Run docker compose up; then docker compose ps. | H11=Web, API, database, Redis, RabbitMQ healthy with seed data in ≤ 3 minutes. | J11=High | K11=Not Executed | O11=DEV-01, 02
+A12=7 | B12=NF-007 | C12=Non-functional | D12=Logs | E12=JSON logs include trace_id | F12=Hit /v1/products. | G12=Read API stdout / Loki. | H12=One JSON object per line with trace_id; no passwords or OTPs. | J12=High | K12=Not Executed | O12=DEV-09 / NFR-LOG-01
+A13=8 | B13=NF-008 | C13=Non-functional | D13=Dashboard | E13=Grafana shows the four golden signals | F13=Monitoring stack deployed. | G13=Open the dashboard. | H13=Latency, traffic, errors and saturation panels with live data. | J13=High | K13=Not Executed | O13=DEV-10 / SLOs 8.2
+A14=9 | B14=NF-009 | C14=Non-functional | D14=Alert | E14=Checkout-success alert reaches the channel | F14=Alert rule + Slack/e-mail webhook. | G14=Force payment failures below the 95 % threshold. | H14=Notification received; evidence attached. | J14=High | K14=Not Executed | O14=SLO checkout success
+A15=10 | B15=NF-010 | C15=Non-functional | D15=A11y | E15=Checkout keyboard-only | F15=Browser, no mouse. | G15=Tab through checkout; complete with the keyboard. | H15=All controls reachable; labels announced. | J15=Medium | K15=Not Executed | O15=NFR-ACC-01
