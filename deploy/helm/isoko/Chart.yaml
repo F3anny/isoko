@@ -1,0 +1,6 @@
+apiVersion: v2
+name: isoko
+description: Isoko storefront and Spring Boot API (external PostgreSQL and Redis)
+type: application
+version: 0.1.0
+appVersion: '1.0.0'

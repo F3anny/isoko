@@ -1,0 +1,10 @@
+api:
+  image: isoko-api:latest
+  replicas: 2
+frontend:
+  image: isoko-storefront:latest
+  replicas: 2
+databaseUrl: jdbc:postgresql://postgres:5432/isoko
+redisHost: redis
+secretName: isoko-secrets
+labCodes: 'true'
